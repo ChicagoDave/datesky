@@ -92,14 +92,27 @@ interface JetstreamEvent {
   };
 }
 
-function handleEvent(event: JetstreamEvent) {
+async function resolveHandle(did: string): Promise<string | undefined> {
+  try {
+    const res = await fetch(`https://plc.directory/${did}`);
+    if (!res.ok) return undefined;
+    const doc = await res.json();
+    const aka = doc.alsoKnownAs?.find((a: string) => a.startsWith("at://"));
+    return aka?.replace("at://", "");
+  } catch {
+    return undefined;
+  }
+}
+
+async function handleEvent(event: JetstreamEvent) {
   if (event.kind === "commit" && event.commit?.collection === COLLECTION) {
     const { did } = event;
     const { operation, record } = event.commit;
 
     if ((operation === "create" || operation === "update") && record) {
-      console.log(`[${operation}] ${did}`);
-      upsertTransaction(did, record);
+      const handle = await resolveHandle(did);
+      console.log(`[${operation}] ${did} (${handle ?? "unknown handle"})`);
+      upsertTransaction(did, record, handle);
     } else if (operation === "delete") {
       console.log(`[delete] ${did}`);
       deleteProfileStmt.run(did);
@@ -132,10 +145,10 @@ function connect() {
     reconnectDelay = 1000; // Reset backoff on successful connect
   });
 
-  ws.on("message", (data) => {
+  ws.on("message", async (data) => {
     try {
       const event: JetstreamEvent = JSON.parse(data.toString());
-      handleEvent(event);
+      await handleEvent(event);
     } catch (err) {
       console.error("Failed to parse event:", err);
     }
