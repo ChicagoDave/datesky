@@ -11,6 +11,8 @@ export default function ProfileForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [did, setDid] = useState("");
+  const [pdsHost, setPdsHost] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
   const [photos, setPhotos] = useState<ProfilePhoto[]>([]);
@@ -23,10 +25,28 @@ export default function ProfileForm() {
   const [createdAt, setCreatedAt] = useState("");
 
   useEffect(() => {
-    fetch("/api/profile")
-      .then(async (res) => {
-        if (res.ok) {
-          const data: DateSkyProfile = await res.json();
+    async function load() {
+      try {
+        // Fetch session for DID
+        const sessionRes = await fetch("/api/auth/session");
+        const session = await sessionRes.json();
+        if (session.did) {
+          setDid(session.did);
+          // Resolve PDS host
+          const plcRes = await fetch(`https://plc.directory/${session.did}`);
+          if (plcRes.ok) {
+            const doc = await plcRes.json();
+            const svc = doc.service?.find(
+              (s: { id: string }) => s.id === "#atproto_pds"
+            );
+            if (svc) setPdsHost(new URL(svc.serviceEndpoint).hostname);
+          }
+        }
+
+        // Fetch existing profile
+        const profileRes = await fetch("/api/profile");
+        if (profileRes.ok) {
+          const data: DateSkyProfile = await profileRes.json();
           if (data) {
             setDisplayName(data.displayName ?? "");
             setBio(data.bio ?? "");
@@ -40,9 +60,10 @@ export default function ProfileForm() {
             setCreatedAt(data.createdAt);
           }
         }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      } catch {}
+      setLoading(false);
+    }
+    load();
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -128,7 +149,7 @@ export default function ProfileForm() {
         <label className="block text-sm font-medium text-sky-300 mb-2">
           Photos
         </label>
-        <PhotoUpload photos={photos} onChange={setPhotos} />
+        <PhotoUpload photos={photos} onChange={setPhotos} did={did} pdsHost={pdsHost} />
       </div>
 
       <div>
