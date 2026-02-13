@@ -1,4 +1,3 @@
-import Link from "next/link";
 import LoginButton from "@/components/LoginButton";
 
 export default function Home() {
@@ -34,12 +33,6 @@ export default function Home() {
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
           <LoginButton />
-          <Link
-            href="/browse"
-            className="text-sky-400 hover:text-white text-sm transition-colors"
-          >
-            Browse profiles
-          </Link>
         </div>
 
         <p className="text-sky-500 text-xs">
