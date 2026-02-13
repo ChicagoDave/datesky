@@ -3,6 +3,8 @@ import Database from "better-sqlite3";
 import path from "path";
 import { initSchema } from "../src/lib/db/schema";
 import type { DateSkyProfile } from "../src/lib/atproto/lexicon";
+import { getAgent } from "../src/lib/atproto/agent";
+import { ListManager } from "../src/lib/atproto/list-manager";
 
 const COLLECTION = "app.datesky.profile";
 const JETSTREAM_URL = "wss://jetstream2.us-east.bsky.network/subscribe";
@@ -14,8 +16,12 @@ db.pragma("journal_mode = WAL");
 db.pragma("foreign_keys = ON");
 initSchema(db);
 
+const LIST_OWNER_DID = process.env.DATESKY_LIST_OWNER_DID;
+const LIST_URI = process.env.DATESKY_LIST_URI;
+
 let eventCount = 0;
 let reconnectDelay = 1000;
+let listManager: ListManager | null = null;
 
 // Prepared statements
 const upsertProfile = db.prepare(`
@@ -113,9 +119,27 @@ async function handleEvent(event: JetstreamEvent) {
       const handle = await resolveHandle(did);
       console.log(`[${operation}] ${did} (${handle ?? "unknown handle"})`);
       upsertTransaction(did, record, handle);
+
+      if (operation === "create" && listManager) {
+        try {
+          await listManager.addMember(did);
+          console.log(`[list] Added ${did}`);
+        } catch (err: any) {
+          console.error(`[list] Failed to add ${did}:`, err?.message ?? err);
+        }
+      }
     } else if (operation === "delete") {
       console.log(`[delete] ${did}`);
       deleteProfileStmt.run(did);
+
+      if (listManager) {
+        try {
+          const removed = await listManager.removeMemberByDid(did);
+          if (removed) console.log(`[list] Removed ${did}`);
+        } catch (err: any) {
+          console.error(`[list] Failed to remove ${did}:`, err?.message ?? err);
+        }
+      }
     }
   } else if (event.kind === "identity" && event.identity?.handle) {
     updateHandleStmt.run(event.identity.handle, event.did);
@@ -190,6 +214,21 @@ function shutdown() {
 process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);
 
+async function initListManager(): Promise<void> {
+  if (!LIST_OWNER_DID || !LIST_URI) {
+    console.warn("List env vars not set — list management disabled");
+    return;
+  }
+  try {
+    const agent = await getAgent(LIST_OWNER_DID);
+    listManager = new ListManager(agent, LIST_URI, LIST_OWNER_DID);
+    console.log("List manager initialized for auto-sync");
+  } catch (err: any) {
+    console.error("Failed to init list manager:", err?.message ?? err);
+    console.warn("List management disabled for this session");
+  }
+}
+
 // Start
 console.log("DateSky Jetstream subscriber starting...");
-connect();
+initListManager().then(() => connect());
