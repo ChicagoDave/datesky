@@ -1,0 +1,103 @@
+{
+  "lexicon": 1,
+  "id": "app.datesky.profile",
+  "description": "A dating profile on the DateSky network.",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "A dating profile. One per account.",
+      "key": "literal:self",
+      "record": {
+        "type": "object",
+        "required": ["createdAt"],
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "description": "Display name for the dating profile.",
+            "maxGraphemes": 64,
+            "maxLength": 640
+          },
+          "bio": {
+            "type": "string",
+            "description": "Free-form dating bio.",
+            "maxGraphemes": 1024,
+            "maxLength": 10240
+          },
+          "photos": {
+            "type": "array",
+            "description": "Profile photos. First photo is the primary one.",
+            "maxLength": 6,
+            "items": {
+              "type": "ref",
+              "ref": "#photo"
+            }
+          },
+          "intentions": {
+            "type": "array",
+            "description": "What the user is looking for.",
+            "maxLength": 5,
+            "items": {
+              "type": "string",
+              "knownValues": ["dating", "friends", "casual", "long-term"]
+            }
+          },
+          "location": {
+            "type": "string",
+            "description": "Freeform location, as broad or specific as you want.",
+            "maxGraphemes": 128,
+            "maxLength": 1280
+          },
+          "gender": {
+            "type": "string",
+            "description": "Freeform gender identity.",
+            "maxGraphemes": 64,
+            "maxLength": 640
+          },
+          "pronouns": {
+            "type": "string",
+            "description": "Freeform pronouns.",
+            "maxGraphemes": 32,
+            "maxLength": 320
+          },
+          "age": {
+            "type": "integer",
+            "description": "Age in years.",
+            "minimum": 18
+          },
+          "tags": {
+            "type": "array",
+            "description": "Self-applied tags for discovery (e.g. 'queer', 'hiking', 'polyam', 'dog-parent', 'portland').",
+            "maxLength": 32,
+            "items": {
+              "type": "string",
+              "maxGraphemes": 64,
+              "maxLength": 640
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "datetime",
+            "description": "Timestamp when the profile was created."
+          }
+        }
+      }
+    },
+    "photo": {
+      "type": "object",
+      "required": ["image", "alt"],
+      "properties": {
+        "image": {
+          "type": "blob",
+          "accept": ["image/png", "image/jpeg", "image/webp"],
+          "maxSize": 1000000
+        },
+        "alt": {
+          "type": "string",
+          "description": "Alt text for accessibility.",
+          "maxGraphemes": 256,
+          "maxLength": 2560
+        }
+      }
+    }
+  }
+}
