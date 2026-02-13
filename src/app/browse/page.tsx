@@ -1,7 +1,16 @@
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
+import { getSession } from "@/lib/session";
 import BrowseContent from "./BrowseContent";
 
-export default function BrowsePage() {
+export const runtime = "nodejs";
+
+export default async function BrowsePage() {
+  const session = await getSession();
+  if (!session.did) {
+    redirect("/");
+  }
+
   return (
     <Suspense
       fallback={

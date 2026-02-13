@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSession } from "@/lib/session";
 import { browseProfiles } from "@/lib/db/queries";
 
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
+  const session = await getSession();
+  if (!session.did) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
   const { searchParams } = new URL(req.url);
 
   const tag = searchParams.get("tag") || undefined;
