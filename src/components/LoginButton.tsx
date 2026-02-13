@@ -30,33 +30,43 @@ export default function LoginButton() {
 
   if (!showInput) {
     return (
-      <button
-        onClick={() => setShowInput(true)}
-        className="bg-sky-500 hover:bg-sky-400 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
-      >
-        Log in with Bluesky
-      </button>
+      <div className="flex flex-col items-center gap-2">
+        <button
+          onClick={() => setShowInput(true)}
+          className="bg-sky-500 hover:bg-sky-400 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
+        >
+          Log in with Bluesky
+        </button>
+        <p className="text-sky-500 text-xs">
+          No account needed here — you sign in with your existing Bluesky account
+        </p>
+      </div>
     );
   }
 
   return (
-    <form onSubmit={handleLogin} className="flex gap-2">
-      <input
-        type="text"
-        placeholder="your-handle.bsky.social"
-        value={handle}
-        onChange={(e) => setHandle(e.target.value)}
-        className="bg-sky-900/50 border border-sky-700 rounded-lg px-4 py-2 text-white placeholder-sky-500 focus:outline-none focus:border-sky-400"
-        autoFocus
-        disabled={loading}
-      />
-      <button
-        type="submit"
-        disabled={loading || !handle.trim()}
-        className="bg-sky-500 hover:bg-sky-400 disabled:bg-sky-700 text-white font-semibold px-6 py-2 rounded-lg transition-colors"
-      >
-        {loading ? "..." : "Go"}
-      </button>
-    </form>
+    <div className="flex flex-col items-center gap-2">
+      <form onSubmit={handleLogin} className="flex gap-2">
+        <input
+          type="text"
+          placeholder="your-handle.bsky.social"
+          value={handle}
+          onChange={(e) => setHandle(e.target.value)}
+          className="bg-sky-900/50 border border-sky-700 rounded-lg px-4 py-2 text-white placeholder-sky-500 focus:outline-none focus:border-sky-400"
+          autoFocus
+          disabled={loading}
+        />
+        <button
+          type="submit"
+          disabled={loading || !handle.trim()}
+          className="bg-sky-500 hover:bg-sky-400 disabled:bg-sky-700 text-white font-semibold px-6 py-2 rounded-lg transition-colors"
+        >
+          {loading ? "..." : "Go"}
+        </button>
+      </form>
+      <p className="text-sky-500 text-xs">
+        Enter your Bluesky handle — you will authorize on Bluesky, not here
+      </p>
+    </div>
   );
 }
