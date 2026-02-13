@@ -1,0 +1,11 @@
+{
+  "keys": [
+    {
+      "kty": "EC",
+      "x": "Y4DfEdBha4ulThkuGeNhERNPxSm_zxQ9xEl-UFoAaQM",
+      "y": "RxsEy1XoHTE3yTii7HYQsaSJQC29pjlY9com-ko964k",
+      "crv": "P-256",
+      "kid": "datesky-key-1"
+    }
+  ]
+}
