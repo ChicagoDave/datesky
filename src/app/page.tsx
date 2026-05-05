@@ -1,5 +1,7 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import LoginButton from "@/components/LoginButton";
+import LoginErrorBanner from "@/components/LoginErrorBanner";
 
 export default function Home() {
   return (
@@ -35,7 +37,10 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+        <div className="flex flex-col items-center justify-center gap-4 pt-4">
+          <Suspense fallback={null}>
+            <LoginErrorBanner />
+          </Suspense>
           <LoginButton />
         </div>
 
