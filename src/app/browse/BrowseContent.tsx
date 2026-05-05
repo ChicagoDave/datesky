@@ -29,6 +29,9 @@ interface BrowseResponse {
   total: number;
   close?: MatchClose;
   viewerTagsInsufficient?: boolean;
+  pool?: number;
+  failsBy?: MatchClose;
+  failedTagFloor?: number;
   error?: string;
 }
 
@@ -42,6 +45,9 @@ export default function BrowseContent({
   const [total, setTotal] = useState(0);
   const [close, setClose] = useState<MatchClose | null>(null);
   const [viewerTagsInsufficient, setViewerTagsInsufficient] = useState(false);
+  const [pool, setPool] = useState(0);
+  const [failsBy, setFailsBy] = useState<MatchClose | null>(null);
+  const [failedTagFloor, setFailedTagFloor] = useState(0);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -77,6 +83,9 @@ export default function BrowseContent({
           setTotal(data.total || 0);
           setClose(data.close ?? null);
           setViewerTagsInsufficient(!!data.viewerTagsInsufficient);
+          setPool(data.pool ?? 0);
+          setFailsBy(data.failsBy ?? null);
+          setFailedTagFloor(data.failedTagFloor ?? 0);
         }
       } catch {
         setProfiles([]);
@@ -195,11 +204,19 @@ export default function BrowseContent({
               ? "No profiles match your preferences."
               : "No profiles found."}
           </p>
-          <p className="text-sky-600 text-sm">
-            {matchModeEnabled
-              ? "Widen your filters in settings to see more."
-              : "Be the first! Create your profile to get started."}
-          </p>
+          {matchModeEnabled && pool > 0 ? (
+            <EmptyMatchDiagnostic
+              pool={pool}
+              failsBy={failsBy}
+              failedTagFloor={failedTagFloor}
+            />
+          ) : (
+            <p className="text-sky-600 text-sm">
+              {matchModeEnabled
+                ? "Widen your filters in settings to see more."
+                : "Be the first! Create your profile to get started."}
+            </p>
+          )}
         </div>
       ) : (
         <>
@@ -257,6 +274,91 @@ export default function BrowseContent({
 
 function hasAnyClose(c: MatchClose): boolean {
   return c.intent + c.gender + c.age + c.location > 0;
+}
+
+interface EmptyMatchDiagnosticProps {
+  pool: number;
+  failsBy: MatchClose | null;
+  failedTagFloor: number;
+}
+
+/**
+ * Empty-state diagnostic for match mode. Tells the viewer how many candidates
+ * the algorithm evaluated and which filter rejected the most. Shown when total = 0
+ * and at least one candidate was evaluated.
+ *
+ * Counts in `failsBy` are not mutually exclusive — a single candidate failing
+ * three axes contributes to all three counters. We surface the largest counts
+ * first, naming the most-actionable filter to relax.
+ */
+function EmptyMatchDiagnostic({
+  pool,
+  failsBy,
+  failedTagFloor,
+}: EmptyMatchDiagnosticProps) {
+  const items: Array<{ label: string; count: number }> = [];
+  if (failsBy) {
+    if (failsBy.age > 0)
+      items.push({ label: "outside your age range", count: failsBy.age });
+    if (failsBy.gender > 0)
+      items.push({
+        label: "didn't match your gender preferences",
+        count: failsBy.gender,
+      });
+    if (failsBy.intent > 0)
+      items.push({
+        label: "had a different intent (dating / friendship)",
+        count: failsBy.intent,
+      });
+    if (failsBy.location > 0)
+      items.push({
+        label: "in a different location",
+        count: failsBy.location,
+      });
+  }
+  if (failedTagFloor > 0) {
+    items.push({
+      label: "shared fewer than 2 tags with you",
+      count: failedTagFloor,
+    });
+  }
+  items.sort((a, b) => b.count - a.count);
+
+  if (items.length === 0) {
+    return (
+      <p className="text-sky-600 text-sm">
+        Widen your filters in{" "}
+        <Link href="/settings" className="underline hover:text-white">
+          settings
+        </Link>{" "}
+        to see more.
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-2 max-w-md mx-auto text-left">
+      <p className="text-sm text-sky-300 mb-2">
+        Of {pool} candidate{pool === 1 ? "" : "s"} we evaluated:
+      </p>
+      <ul className="space-y-1 text-sm text-sky-300">
+        {items.map((item) => (
+          <li key={item.label}>
+            <span className="text-white font-medium">{item.count}</span>{" "}
+            {item.label}
+          </li>
+        ))}
+      </ul>
+      <p className="text-xs text-sky-500 mt-3">
+        Counts overlap — a profile failing two filters is counted in both.
+        Adjust your preferences in{" "}
+        <Link href="/settings" className="underline hover:text-white">
+          settings
+        </Link>{" "}
+        to see candidates.
+      </p>
+    </div>
+  );
 }
 
 function CloseBreakdown({ close }: { close: MatchClose }) {

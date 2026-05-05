@@ -6,9 +6,10 @@
  *
  * The algorithm follows ADR 0001 §"Match mode is a binary toggle on the existing browse pipeline":
  *   - Hard filter: intent, gender, age (with intent-aware range selection), location
- *   - Hard floor: candidate must share >= 2 tags with the viewer (skipped if viewer has < 2 tags)
+ *   - Tag floor: applied only when both viewer and candidate have >= 2 tags (symmetric leniency)
  *   - Soft rank: score = tag_overlap / sqrt(candidate_tag_count); descending
  *   - "Close": candidates failing exactly one hard filter are counted by axis, not returned
+ *   - "failsBy": per-axis fail count across ALL excluded candidates (multi-axis fails counted in each)
  *
  * Scores are not exposed to callers — only ordering. This is intentional per ADR 0001 §6.
  */
@@ -35,6 +36,16 @@ export interface MatchResult {
    * case the tag floor is suspended and the UI should suggest adding tags.
    */
   viewerTagsInsufficient: boolean;
+  /** Total candidates evaluated (input length, after the viewer self-exclusion done by the caller). */
+  pool: number;
+  /**
+   * Per-axis fail counts across every excluded candidate. A candidate failing
+   * three axes contributes to all three counters. Used by the UI to diagnose
+   * empty-result states ("all 75 candidates failed because of X").
+   */
+  failsBy: MatchClose;
+  /** Candidates that passed every hard filter but failed the tag floor. */
+  failedTagFloor: number;
 }
 
 interface MatchProfilesArgs {
@@ -71,15 +82,92 @@ function passesIntent(
   return hasDating || hasFriendship;
 }
 
+/**
+ * Synonym sets for canonical gender preference tokens. Each set contains the
+ * tokens or short phrases that, when found in a candidate's normalized gender
+ * string, count as a match. Adding a synonym is safe; removing one can silently
+ * stop matching real candidates so leave existing entries in place.
+ *
+ * Single-token synonyms match candidate tokens (whole-word match on a normalized
+ * string). Multi-word synonyms match as substrings of the same normalized string;
+ * since normalization collapses punctuation/whitespace to single spaces, a
+ * substring check on the phrase is unambiguous.
+ *
+ * Bare single letters ("f", "m") match candidates who self-id with just a letter
+ * (e.g. "F (she/her)" → tokens include "f"). They will not false-match longer
+ * tokens because matching is by exact token, not substring.
+ */
+const GENDER_SYNONYMS: Record<string, readonly string[]> = {
+  woman: ["woman", "women", "female", "f", "femme", "womxn", "lady", "gal"],
+  man: ["man", "men", "male", "m", "guy", "dude"],
+  nonbinary: ["nonbinary", "non binary", "nb", "enby", "gnc", "agender"],
+  trans: [
+    "trans",
+    "transgender",
+    "transmasc",
+    "transfem",
+    "transmasculine",
+    "transfeminine",
+    "ftm",
+    "mtf",
+  ],
+  genderqueer: ["genderqueer", "gq", "queer"],
+};
+
+/**
+ * Lowercase, replace any non-alphanumeric run with a single space, trim, and
+ * collapse internal whitespace. Result is suitable for word-level token matching.
+ */
+function normalizeGender(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * True when the candidate's normalized gender string matches the given preference.
+ * Known canonical preferences (woman, man, nonbinary, trans, genderqueer) use
+ * their synonym set. Custom user-typed preferences fall back to a normalized
+ * substring match on the whole string.
+ */
+function genderPreferenceMatches(
+  normalizedCandidate: string,
+  pref: string
+): boolean {
+  const normalizedPref = normalizeGender(pref);
+  if (!normalizedPref) return false;
+
+  const synonyms = GENDER_SYNONYMS[normalizedPref];
+  if (!synonyms) {
+    // Custom preference — fall back to substring match on the normalized form.
+    return normalizedCandidate.includes(normalizedPref);
+  }
+
+  const tokens = new Set(normalizedCandidate.split(" "));
+  for (const syn of synonyms) {
+    if (syn.includes(" ")) {
+      if (normalizedCandidate.includes(syn)) return true;
+    } else if (tokens.has(syn)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function passesGender(
   prefs: UserPreferences,
   candidateGender: string | null
 ): boolean {
   if (prefs.gender_preferences.length === 0) return true;
-  if (!candidateGender) return false;
-  const lower = candidateGender.toLowerCase();
+  // Treat missing gender as "no info" rather than auto-fail. This is consistent
+  // with passesAge for missing age, and avoids silently excluding partial profiles.
+  if (!candidateGender) return true;
+  const normalized = normalizeGender(candidateGender);
+  if (!normalized) return true;
   return prefs.gender_preferences.some((p) =>
-    lower.includes(p.toLowerCase())
+    genderPreferenceMatches(normalized, p)
   );
 }
 
@@ -171,6 +259,8 @@ export function matchProfiles(args: MatchProfilesArgs): MatchResult {
   const viewerTagsInsufficient = args.viewerTags.length < 2;
 
   const close: MatchClose = { intent: 0, gender: 0, age: 0, location: 0 };
+  const failsBy: MatchClose = { intent: 0, gender: 0, age: 0, location: 0 };
+  let failedTagFloor = 0;
   const scored: Array<{ profile: IndexedProfile; score: number }> = [];
 
   for (const candidate of args.candidates) {
@@ -183,16 +273,21 @@ export function matchProfiles(args: MatchProfilesArgs): MatchResult {
     if (!passesAge(args.viewerPrefs, candidate.age, intentions)) failing.push("age");
     if (!passesLocation(args.viewerPrefs, candidate.location)) failing.push("location");
 
-    if (failing.length === 1) {
-      close[failing[0]]++;
+    if (failing.length > 0) {
+      for (const axis of failing) failsBy[axis]++;
+      if (failing.length === 1) close[failing[0]]++;
       continue;
     }
-    if (failing.length > 1) continue;
 
-    // Passed all hard filters. Apply tag floor unless viewer has too few tags.
-    if (!viewerTagsInsufficient) {
+    // Passed every hard filter. Apply the tag floor only when both sides have
+    // >= 2 tags. Sparse profiles (viewer or candidate) skip the floor and
+    // ride to the bottom of the rank instead of being excluded entirely.
+    if (!viewerTagsInsufficient && tags.length >= 2) {
       const overlap = tagOverlapCount(viewerTagSet, tags);
-      if (overlap < 2) continue;
+      if (overlap < 2) {
+        failedTagFloor++;
+        continue;
+      }
     }
 
     const score = viewerTagsInsufficient
@@ -210,5 +305,8 @@ export function matchProfiles(args: MatchProfilesArgs): MatchResult {
     total,
     close,
     viewerTagsInsufficient,
+    pool: args.candidates.length,
+    failsBy,
+    failedTagFloor,
   };
 }
