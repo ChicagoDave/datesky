@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
+import { getUserPreferences } from "@/lib/db/queries";
 import BrowseContent from "./BrowseContent";
 
 export const runtime = "nodejs";
@@ -11,6 +12,8 @@ export default async function BrowsePage() {
     redirect("/");
   }
 
+  const prefs = getUserPreferences(session.did);
+
   return (
     <Suspense
       fallback={
@@ -20,7 +23,10 @@ export default async function BrowsePage() {
         </main>
       }
     >
-      <BrowseContent />
+      <BrowseContent
+        compactView={prefs.compact_view}
+        matchModeEnabled={prefs.match_mode_enabled}
+      />
     </Suspense>
   );
 }

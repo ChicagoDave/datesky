@@ -1,1 +1,18 @@
 @import "tailwindcss";
+
+:root {
+  --brand-pink: #d60270;
+  --brand-purple: #9b4f96;
+  --brand-blue: #0038a8;
+  --bg-base: #0f0817;
+}
+
+body {
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 10%, rgba(214, 2, 112, 0.18), transparent 60%),
+    radial-gradient(ellipse 70% 50% at 80% 90%, rgba(0, 56, 168, 0.22), transparent 60%),
+    radial-gradient(ellipse 70% 50% at 50% 50%, rgba(155, 79, 150, 0.12), transparent 70%),
+    var(--bg-base);
+  background-attachment: fixed;
+  min-height: 100vh;
+}

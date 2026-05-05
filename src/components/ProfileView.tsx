@@ -6,6 +6,7 @@ interface ProfileViewProps {
   did: string;
   handle?: string;
   pdsHost?: string;
+  photosHidden?: boolean;
 }
 
 export default function ProfileView({
@@ -13,6 +14,7 @@ export default function ProfileView({
   did,
   handle,
   pdsHost,
+  photosHidden,
 }: ProfileViewProps) {
   const displayHandle = handle || did;
 
@@ -28,6 +30,12 @@ export default function ProfileView({
               alt={profile.photos[0].alt || "Profile photo"}
               className="w-full h-full object-cover"
             />
+          </div>
+        )}
+
+        {photosHidden && (
+          <div className="w-32 h-32 rounded-xl bg-white/5 border border-white/10 flex-shrink-0 flex items-center justify-center text-center text-xs text-sky-400 px-2">
+            Photos hidden in your settings
           </div>
         )}
 

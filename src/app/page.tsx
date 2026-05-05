@@ -1,3 +1,4 @@
+import Link from "next/link";
 import LoginButton from "@/components/LoginButton";
 
 export default function Home() {
@@ -5,11 +6,14 @@ export default function Home() {
     <main className="min-h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center px-6">
       <div className="max-w-2xl text-center space-y-8">
         <h1 className="text-5xl sm:text-6xl font-bold tracking-tight">
-          Date<span className="text-sky-400">Sky</span>
+          Date
+          <span className="bg-gradient-to-r from-[#d60270] via-[#9b4f96] to-[#0038a8] bg-clip-text text-transparent">
+            Sky
+          </span>
         </h1>
 
         <p className="text-xl sm:text-2xl text-sky-200 leading-relaxed">
-          Open dating on Bluesky. Make a profile. Tag yourself. Find each other.
+          Open dating on the atmosphere. Make a profile. Tag yourself. Find each other.
         </p>
 
         <div className="grid sm:grid-cols-2 gap-4 text-left text-sm text-sky-300">
@@ -45,6 +49,13 @@ export default function Home() {
           >
             AT Protocol
           </a>
+          {" · "}
+          <Link
+            href="/about"
+            className="underline hover:text-sky-300 transition-colors"
+          >
+            How it works
+          </Link>
         </p>
       </div>
     </main>

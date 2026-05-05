@@ -209,3 +209,169 @@ export function saveCursor(cursorUs: number) {
     "INSERT OR REPLACE INTO cursor (id, cursor_us) VALUES (1, ?)"
   ).run(cursorUs);
 }
+
+// User preferences (private, per-DID — see ADR 0001)
+export type MatchIntent = "dating" | "friendship" | "both";
+
+export interface UserPreferences {
+  show_photos: boolean;
+  compact_view: boolean;
+  match_mode_enabled: boolean;
+  match_intent: MatchIntent;
+  dating_age_min: number | null;
+  dating_age_max: number | null;
+  friendship_age_min: number | null;
+  friendship_age_max: number | null;
+  gender_preferences: string[];
+  location_filter: string | null;
+}
+
+export const DEFAULT_PREFERENCES: UserPreferences = {
+  show_photos: true,
+  compact_view: false,
+  match_mode_enabled: false,
+  match_intent: "dating",
+  dating_age_min: 25,
+  dating_age_max: 45,
+  friendship_age_min: 18,
+  friendship_age_max: 99,
+  gender_preferences: [],
+  location_filter: null,
+};
+
+interface UserPreferencesRow {
+  show_photos: number;
+  compact_view: number;
+  match_mode_enabled: number;
+  match_intent: string;
+  dating_age_min: number | null;
+  dating_age_max: number | null;
+  friendship_age_min: number | null;
+  friendship_age_max: number | null;
+  gender_preferences: string;
+  location_filter: string | null;
+}
+
+function rowToPrefs(row: UserPreferencesRow): UserPreferences {
+  let genderPrefs: string[] = [];
+  try {
+    const parsed = JSON.parse(row.gender_preferences);
+    if (Array.isArray(parsed)) {
+      genderPrefs = parsed.filter((v): v is string => typeof v === "string");
+    }
+  } catch {
+    // malformed JSON in DB — fall back to empty
+  }
+  const intent: MatchIntent =
+    row.match_intent === "friendship" || row.match_intent === "both"
+      ? row.match_intent
+      : "dating";
+  return {
+    show_photos: row.show_photos === 1,
+    compact_view: row.compact_view === 1,
+    match_mode_enabled: row.match_mode_enabled === 1,
+    match_intent: intent,
+    dating_age_min: row.dating_age_min,
+    dating_age_max: row.dating_age_max,
+    friendship_age_min: row.friendship_age_min,
+    friendship_age_max: row.friendship_age_max,
+    gender_preferences: genderPrefs,
+    location_filter: row.location_filter,
+  };
+}
+
+/**
+ * Look up a viewer's stored preferences.
+ * Returns DEFAULT_PREFERENCES when no row exists.
+ */
+export function getUserPreferences(did: string): UserPreferences {
+  const db = getDb();
+  const row = db
+    .prepare(
+      `SELECT show_photos, compact_view, match_mode_enabled, match_intent,
+              dating_age_min, dating_age_max, friendship_age_min, friendship_age_max,
+              gender_preferences, location_filter
+         FROM user_preferences WHERE did = ?`
+    )
+    .get(did) as UserPreferencesRow | undefined;
+  if (!row) return DEFAULT_PREFERENCES;
+  return rowToPrefs(row);
+}
+
+/**
+ * Upsert a viewer's preferences. Booleans coerced to 0/1, gender_preferences serialized as JSON.
+ * Refreshes updated_at on every write.
+ */
+export function setUserPreferences(
+  did: string,
+  prefs: UserPreferences
+): UserPreferences {
+  const db = getDb();
+  db.prepare(
+    `INSERT INTO user_preferences (
+       did, show_photos, compact_view, match_mode_enabled, match_intent,
+       dating_age_min, dating_age_max, friendship_age_min, friendship_age_max,
+       gender_preferences, location_filter, updated_at
+     )
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+     ON CONFLICT(did) DO UPDATE SET
+       show_photos = excluded.show_photos,
+       compact_view = excluded.compact_view,
+       match_mode_enabled = excluded.match_mode_enabled,
+       match_intent = excluded.match_intent,
+       dating_age_min = excluded.dating_age_min,
+       dating_age_max = excluded.dating_age_max,
+       friendship_age_min = excluded.friendship_age_min,
+       friendship_age_max = excluded.friendship_age_max,
+       gender_preferences = excluded.gender_preferences,
+       location_filter = excluded.location_filter,
+       updated_at = datetime('now')`
+  ).run(
+    did,
+    prefs.show_photos ? 1 : 0,
+    prefs.compact_view ? 1 : 0,
+    prefs.match_mode_enabled ? 1 : 0,
+    prefs.match_intent,
+    prefs.dating_age_min,
+    prefs.dating_age_max,
+    prefs.friendship_age_min,
+    prefs.friendship_age_max,
+    JSON.stringify(prefs.gender_preferences),
+    prefs.location_filter
+  );
+  return prefs;
+}
+
+/**
+ * Pull every indexed profile (with tags and intentions attached) except the viewer.
+ * Used as the candidate pool for match mode — filtering and scoring happens in src/lib/match.
+ */
+export function getMatchCandidates(viewerDid: string): IndexedProfile[] {
+  const db = getDb();
+  const rows = db
+    .prepare("SELECT * FROM profiles WHERE did != ?")
+    .all(viewerDid) as IndexedProfile[];
+
+  const tagStmt = db.prepare("SELECT tag FROM profile_tags WHERE did = ?");
+  const intentionStmt = db.prepare(
+    "SELECT intention FROM profile_intentions WHERE did = ?"
+  );
+  for (const row of rows) {
+    row.tags = (tagStmt.all(row.did) as { tag: string }[]).map((r) => r.tag);
+    row.intentions = (
+      intentionStmt.all(row.did) as { intention: string }[]
+    ).map((r) => r.intention);
+  }
+  return rows;
+}
+
+/**
+ * Look up the viewer's own tags. Used as the comparison set when scoring tag overlap.
+ */
+export function getProfileTags(did: string): string[] {
+  const db = getDb();
+  const rows = db
+    .prepare("SELECT tag FROM profile_tags WHERE did = ?")
+    .all(did) as { tag: string }[];
+  return rows.map((r) => r.tag);
+}

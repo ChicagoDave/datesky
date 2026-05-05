@@ -26,13 +26,22 @@ export default function Nav() {
   }
 
   return (
-    <nav className="border-b border-sky-800/50 bg-sky-950/80 backdrop-blur-sm sticky top-0 z-50">
+    <nav className="border-b border-white/10 bg-[#0f0817]/80 backdrop-blur-sm sticky top-0 z-50">
       <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
         <Link href="/" className="text-xl font-bold">
-          Date<span className="text-sky-400">Sky</span>
+          Date
+          <span className="bg-gradient-to-r from-[#d60270] via-[#9b4f96] to-[#0038a8] bg-clip-text text-transparent">
+            Sky
+          </span>
         </Link>
 
         <div className="flex items-center gap-4">
+          <Link
+            href="/about"
+            className="text-sm text-sky-300 hover:text-white transition-colors"
+          >
+            About
+          </Link>
           {session?.authenticated ? (
             <>
               <Link
@@ -46,6 +55,12 @@ export default function Nav() {
                 className="text-sm text-sky-300 hover:text-white transition-colors"
               >
                 My Profile
+              </Link>
+              <Link
+                href="/settings"
+                className="text-sm text-sky-300 hover:text-white transition-colors"
+              >
+                Settings
               </Link>
               <button
                 onClick={handleLogout}

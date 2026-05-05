@@ -33,12 +33,12 @@ export default function LoginButton() {
       <div className="flex flex-col items-center gap-2">
         <button
           onClick={() => setShowInput(true)}
-          className="bg-sky-500 hover:bg-sky-400 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
+          className="bg-gradient-to-r from-[#d60270] to-[#9b4f96] hover:from-[#e0357a] hover:to-[#a95fa8] text-white font-semibold px-6 py-3 rounded-lg transition-colors shadow-lg shadow-[#d60270]/20"
         >
-          Log in with Bluesky
+          Sign in with your atproto account
         </button>
         <p className="text-sky-500 text-xs">
-          No account needed here — you sign in with your existing Bluesky account
+          Works with Bluesky, Blacksky, or any AT Protocol PDS — you authorize on your provider, not here
         </p>
       </div>
     );
@@ -59,13 +59,13 @@ export default function LoginButton() {
         <button
           type="submit"
           disabled={loading || !handle.trim()}
-          className="bg-sky-500 hover:bg-sky-400 disabled:bg-sky-700 text-white font-semibold px-6 py-2 rounded-lg transition-colors"
+          className="bg-gradient-to-r from-[#d60270] to-[#9b4f96] hover:from-[#e0357a] hover:to-[#a95fa8] disabled:from-sky-800 disabled:to-sky-800 text-white font-semibold px-6 py-2 rounded-lg transition-colors"
         >
           {loading ? "..." : "Go"}
         </button>
       </form>
       <p className="text-sky-500 text-xs">
-        Enter your Bluesky handle — you will authorize on Bluesky, not here
+        Enter your atproto handle (e.g. <code>you.bsky.social</code>) — you authorize on your provider, not here
       </p>
     </div>
   );

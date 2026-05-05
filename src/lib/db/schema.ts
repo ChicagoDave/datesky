@@ -52,5 +52,20 @@ export function initSchema(db: Database.Database) {
       id INTEGER PRIMARY KEY CHECK (id = 1),
       cursor_us INTEGER NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS user_preferences (
+      did TEXT PRIMARY KEY,
+      show_photos INTEGER NOT NULL DEFAULT 1,
+      compact_view INTEGER NOT NULL DEFAULT 0,
+      match_mode_enabled INTEGER NOT NULL DEFAULT 0,
+      match_intent TEXT NOT NULL DEFAULT 'dating',
+      dating_age_min INTEGER,
+      dating_age_max INTEGER,
+      friendship_age_min INTEGER,
+      friendship_age_max INTEGER,
+      gender_preferences TEXT NOT NULL DEFAULT '[]',
+      location_filter TEXT,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
 }
