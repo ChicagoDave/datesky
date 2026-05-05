@@ -6,12 +6,14 @@ export default function LoginButton() {
   const [handle, setHandle] = useState("");
   const [loading, setLoading] = useState(false);
   const [showInput, setShowInput] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     if (!handle.trim()) return;
 
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
@@ -19,11 +21,21 @@ export default function LoginButton() {
         body: JSON.stringify({ handle: handle.trim() }),
       });
 
-      const data = await res.json();
-      if (data.url) {
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok && data.url) {
         window.location.href = data.url;
+        return;
       }
+
+      setError(
+        typeof data.error === "string"
+          ? data.error
+          : "Sign-in didn't start. Please try again."
+      );
     } catch {
+      setError("Network error. Check your connection and try again.");
+    } finally {
       setLoading(false);
     }
   }
@@ -64,6 +76,14 @@ export default function LoginButton() {
           {loading ? "..." : "Go"}
         </button>
       </form>
+      {error && (
+        <p
+          role="alert"
+          className="text-pink-300 text-sm max-w-md text-center px-2"
+        >
+          {error}
+        </p>
+      )}
       <p className="text-sky-500 text-xs">
         Enter your atproto handle (e.g. <code>you.bsky.social</code>) — you authorize on your provider, not here
       </p>
