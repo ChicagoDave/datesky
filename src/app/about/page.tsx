@@ -148,8 +148,33 @@ export default function About() {
           </p>
         </section>
 
-        <section className="space-y-3 pt-8 border-t border-white/10">
-          <h2 className="text-xl font-semibold">Independent project</h2>
+        <section className="space-y-4 pt-8 border-t border-white/10">
+          <h2 className="text-xl font-semibold">Independent and open source</h2>
+          <p className="text-sky-300 text-sm leading-relaxed">
+            The code is on GitHub at{" "}
+            <a
+              href="https://github.com/chicagodave/datesky"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-white"
+            >
+              github.com/chicagodave/datesky
+            </a>
+            . Issues, pull requests, and feedback are welcome.
+          </p>
+          <p className="text-sky-300 text-sm leading-relaxed">
+            The name &ldquo;DateSky&rdquo; is a working title — we&apos;re open
+            to a better one. If you have a suggestion, please open a{" "}
+            <a
+              href="https://github.com/chicagodave/datesky/issues/new"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-white"
+            >
+              GitHub issue
+            </a>
+            .
+          </p>
           <p className="text-sky-300 text-sm leading-relaxed">
             DateSky is not affiliated with, endorsed by, or sponsored by
             Bluesky Social PBC. Built on the open{" "}

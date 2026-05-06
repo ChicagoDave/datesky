@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import MobileTabBar from "@/components/MobileTabBar";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -16,10 +17,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="text-white antialiased">
+      <body className="text-white antialiased pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-0">
         <Nav />
         {children}
         <Footer />
+        <MobileTabBar />
       </body>
     </html>
   );

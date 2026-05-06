@@ -1,5 +1,15 @@
 "use client";
 
+/**
+ * Top navigation bar.
+ *
+ * Public interface: default export, mounted once in RootLayout.
+ * Owner context: layout chrome.
+ *
+ * Mobile: minimal — logo + About + @handle (auth) or About only (anon).
+ *   Primary navigation lives in <MobileTabBar /> at the bottom of the viewport.
+ * Desktop: full horizontal layout with all destinations and the sign-out button.
+ */
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
@@ -35,7 +45,23 @@ export default function Nav() {
           </span>
         </Link>
 
-        <div className="flex items-center gap-4">
+        {/* Mobile right-side: minimal */}
+        <div className="flex md:hidden items-center gap-3">
+          <Link
+            href="/about"
+            className="text-sm text-sky-300 hover:text-white transition-colors"
+          >
+            About
+          </Link>
+          {session?.authenticated && session.handle && (
+            <span className="text-xs text-sky-500 truncate max-w-[8rem]">
+              @{session.handle}
+            </span>
+          )}
+        </div>
+
+        {/* Desktop right-side: full menu */}
+        <div className="hidden md:flex items-center gap-4">
           <Link
             href="/about"
             className="text-sm text-sky-300 hover:text-white transition-colors"

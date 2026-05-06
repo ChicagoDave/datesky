@@ -12,6 +12,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { getUserPreferences } from "@/lib/db/queries";
 import SettingsForm from "./SettingsForm";
+import SignOutButton from "@/components/SignOutButton";
 
 export const runtime = "nodejs";
 
@@ -44,6 +45,13 @@ export default async function SettingsPage() {
         <ul className="text-sm text-sky-500 space-y-1">
           <li>· Light / dark theme</li>
         </ul>
+      </section>
+
+      <section className="mt-10 pt-6 border-t border-white/10">
+        <h2 className="text-sm font-semibold text-sky-300 uppercase tracking-wide mb-3">
+          Account
+        </h2>
+        <SignOutButton />
       </section>
     </main>
   );
