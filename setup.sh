@@ -5,7 +5,7 @@
 set -e
 
 DOMAIN="nomare.net"
-APP_DIR="/home/dave/repos/datesky"
+APP_DIR="/home/dave/repos/nomare"
 PORT=3003
 USER="dave"
 

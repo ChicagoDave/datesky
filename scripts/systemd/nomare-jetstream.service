@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=simple
 User=dave
-WorkingDirectory=/home/dave/repos/datesky
+WorkingDirectory=/home/dave/repos/nomare
 ExecStart=/usr/bin/npx tsx scripts/jetstream.ts
 Restart=on-failure
 RestartSec=10
