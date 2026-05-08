@@ -1,5 +1,5 @@
 import { getDb } from "./index";
-import type { DateSkyProfile } from "../atproto/lexicon";
+import type { NomareProfile } from "../atproto/lexicon";
 
 export interface IndexedProfile {
   did: string;
@@ -19,7 +19,7 @@ export interface IndexedProfile {
 
 export function upsertProfile(
   did: string,
-  record: DateSkyProfile,
+  record: NomareProfile,
   handle?: string
 ) {
   const db = getDb();

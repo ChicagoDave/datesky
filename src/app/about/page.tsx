@@ -54,7 +54,7 @@ export default function About() {
               <span>
                 Profile fields live at{" "}
                 <code className="bg-white/10 px-1.5 py-0.5 rounded text-sm">
-                  app.datesky.profile
+                  app.nomare.profile
                 </code>{" "}
                 in your AT Protocol repo.
               </span>

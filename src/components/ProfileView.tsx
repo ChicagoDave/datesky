@@ -1,8 +1,8 @@
-import type { DateSkyProfile } from "@/lib/atproto/lexicon";
+import type { NomareProfile } from "@/lib/atproto/lexicon";
 import Link from "next/link";
 
 interface ProfileViewProps {
-  profile: DateSkyProfile;
+  profile: NomareProfile;
   did: string;
   handle?: string;
   pdsHost?: string;

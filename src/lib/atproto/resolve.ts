@@ -1,4 +1,17 @@
-import { COLLECTION, RKEY, type DateSkyProfile } from "./lexicon";
+/**
+ * Resolve a DID to its PDS host and fetch its profile record.
+ *
+ * Public interface: `resolveDid(did)` returns `{ pdsHost, handle? }` or `null`;
+ * `fetchProfileFromPds(did, pdsHost)` returns a `NomareProfile` or `null`, trying the
+ * canonical NSID first and falling back to the legacy NSID per ADR-0003.
+ * Owner context: AT Protocol integration — Identity / Profile bounded context.
+ */
+import {
+  COLLECTION,
+  LEGACY_COLLECTION,
+  RKEY,
+  type NomareProfile,
+} from "./lexicon";
 
 interface DidDocument {
   id: string;
@@ -46,17 +59,37 @@ export async function resolveDid(did: string): Promise<{
   }
 }
 
-export async function fetchProfileFromPds(
+/**
+ * Try fetching the record at a single NSID. Returns null if the record does not exist
+ * (HTTP 4xx) or if the request fails for any reason. Callers compose this with the
+ * dual-namespace fallback in `fetchProfileFromPds`.
+ */
+async function fetchRecordAtCollection(
   did: string,
-  pdsHost: string
-): Promise<DateSkyProfile | null> {
+  pdsHost: string,
+  collection: string
+): Promise<NomareProfile | null> {
   try {
-    const url = `https://${pdsHost}/xrpc/com.atproto.repo.getRecord?repo=${encodeURIComponent(did)}&collection=${COLLECTION}&rkey=${RKEY}`;
+    const url = `https://${pdsHost}/xrpc/com.atproto.repo.getRecord?repo=${encodeURIComponent(did)}&collection=${collection}&rkey=${RKEY}`;
     const res = await fetch(url, { next: { revalidate: 60 } });
     if (!res.ok) return null;
     const data = await res.json();
-    return data.value as DateSkyProfile;
+    return data.value as NomareProfile;
   } catch {
     return null;
   }
+}
+
+/**
+ * Fetch a user's profile from their PDS, trying the canonical NSID first and falling
+ * back to the legacy NSID per ADR-0003. Returns `null` if neither namespace yields a
+ * record (or if the PDS is unreachable).
+ */
+export async function fetchProfileFromPds(
+  did: string,
+  pdsHost: string
+): Promise<NomareProfile | null> {
+  const primary = await fetchRecordAtCollection(did, pdsHost, COLLECTION);
+  if (primary) return primary;
+  return fetchRecordAtCollection(did, pdsHost, LEGACY_COLLECTION);
 }

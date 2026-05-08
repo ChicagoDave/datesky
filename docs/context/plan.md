@@ -114,7 +114,12 @@ Original options analysis:
   - ADR-0003 written explaining why `app.datesky.*` is retained as a permanent protocol identifier
   - No lexicon file renames
 - **Exit state**: `COLLECTION` in `lexicon.ts` matches the chosen namespace. ADR-0003 is committed. Real-path test passes against a live (dev or staging) PDS.
-- **Status**: CURRENT
+- **Status**: COMPLETE — 2026-05-07
+  - Decision A executed via dual-publish (not the originally listed branches). ADR-0003 written codifying the strategy: passive migration (no bulk re-write of 85 existing records — they upgrade organically on next save), nomare-first reads with legacy fallback, dual-write with legacy as best-effort mirror.
+  - Open-question resolutions at execution time: real-path test is manual-run with operator-provided app password (option 1b); legacy mirror write logs + returns success on failure (option 2); legacy lexicon JSON retained with `description` field flagging legacy status (option 3 — JSON has no comment syntax, used the description field as the closest equivalent).
+  - Files: new `lexicons/app/nomare/profile.json` (mirror of legacy schema, new id); `lexicons/app/datesky/profile.json` description updated; `src/lib/atproto/lexicon.ts` exports `COLLECTION`+`LEGACY_COLLECTION` and `NomareProfile` (rename of `DateSkyProfile`); `src/lib/atproto/resolve.ts` rewritten with read fallback; `src/app/api/profile/route.ts` rewritten with dual-write (primary fails request, legacy mirror best-effort); `scripts/jetstream.ts` subscribes to both collections via `wantedCollections.append`; import sites updated in `ProfileView.tsx`, `ProfileForm.tsx`, `queries.ts`; `about/page.tsx` and `docs/start.md` display strings updated to canonical NSID; `scripts/test-dual-publish.ts` written as the manual real-path test (operator runs with `NOMARE_TEST_HANDLE`/`NOMARE_TEST_APP_PASSWORD` env vars).
+  - Real-path test (CLAUDE.md rule 12a): `scripts/test-dual-publish.ts` covers the dual-write produces both records, both-present read returns canonical, legacy-only read falls back. Manual invocation per operator workflow documented in script header.
+  - Type-check clean.
 
 ### Phase 3: OAuth Client Re-registration at nomare.net
 - **Tier**: Medium
@@ -129,7 +134,7 @@ Original options analysis:
   - If Decision B = hard cutover: all existing OAuth sessions are invalidated; document this in release notes
   - Real-path test (per CLAUDE.md rule 12a): an end-to-end OAuth flow test that (a) initiates an authorization request using the new `client_id`, (b) completes the callback at `https://nomare.net/auth/callback` (can use a staging environment), and (c) confirms a valid session is established. Must exercise the real AT Protocol OAuth stack, not a mock.
 - **Exit state**: `grep "datesky.app" public/client-metadata.json src/lib/atproto/oauth-client.ts` returns nothing. OAuth flow completes successfully against the nomare.net host. `.env.example` is updated.
-- **Status**: PENDING
+- **Status**: CURRENT
 
 ### Phase 4: Infrastructure — nomare.net Vhost, TLS, and Reverse Proxy
 - **Tier**: Small

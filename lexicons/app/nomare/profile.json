@@ -1,11 +1,11 @@
 {
   "lexicon": 1,
-  "id": "app.datesky.profile",
-  "description": "[LEGACY] Original DateSky profile schema. Retained during the dual-publish transition to app.nomare.profile (ADR-0003). New writes go to app.nomare.profile first; this collection is written as a legacy mirror so existing records remain readable. Schema must remain identical to app.nomare.profile until the legacy mirror is sunset.",
+  "id": "app.nomare.profile",
+  "description": "A profile on the Nomare network. Schema mirrors app.datesky.profile during the dual-publish transition (see docs/adrs/0003-lexicon-dual-publish.md).",
   "defs": {
     "main": {
       "type": "record",
-      "description": "A dating profile. One per account.",
+      "description": "A profile. One per account.",
       "key": "literal:self",
       "record": {
         "type": "object",
@@ -13,13 +13,13 @@
         "properties": {
           "displayName": {
             "type": "string",
-            "description": "Display name for the dating profile.",
+            "description": "Display name for the profile.",
             "maxGraphemes": 64,
             "maxLength": 640
           },
           "bio": {
             "type": "string",
-            "description": "Free-form dating bio.",
+            "description": "Free-form bio.",
             "maxGraphemes": 1024,
             "maxLength": 10240
           },

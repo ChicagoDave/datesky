@@ -2,11 +2,18 @@ import WebSocket from "ws";
 import Database from "better-sqlite3";
 import path from "path";
 import { initSchema } from "../src/lib/db/schema";
-import type { DateSkyProfile } from "../src/lib/atproto/lexicon";
+import {
+  COLLECTION,
+  LEGACY_COLLECTION,
+  type NomareProfile,
+} from "../src/lib/atproto/lexicon";
 import { getAgent } from "../src/lib/atproto/agent";
 import { ListManager } from "../src/lib/atproto/list-manager";
 
-const COLLECTION = "app.datesky.profile";
+// Subscribed collections — canonical NSID and the legacy NSID during the dual-publish
+// transition (ADR-0003). The local `profiles` table is DID-keyed, so events from either
+// collection upsert into the same row idempotently.
+const SUBSCRIBED_COLLECTIONS = new Set<string>([COLLECTION, LEGACY_COLLECTION]);
 const JETSTREAM_URL = "wss://jetstream2.us-east.bsky.network/subscribe";
 const CURSOR_SAVE_INTERVAL = 100; // Save cursor every N events
 
@@ -56,7 +63,7 @@ const saveCursorStmt = db.prepare(
 );
 
 const upsertTransaction = db.transaction(
-  (did: string, record: DateSkyProfile, handle?: string) => {
+  (did: string, record: NomareProfile, handle?: string) => {
     upsertProfile.run(
       did,
       handle ?? null,
@@ -91,7 +98,7 @@ interface JetstreamEvent {
     collection: string;
     operation: string;
     rkey: string;
-    record?: DateSkyProfile;
+    record?: NomareProfile;
   };
   identity?: {
     handle?: string;
@@ -111,7 +118,11 @@ async function resolveHandle(did: string): Promise<string | undefined> {
 }
 
 async function handleEvent(event: JetstreamEvent) {
-  if (event.kind === "commit" && event.commit?.collection === COLLECTION) {
+  if (
+    event.kind === "commit" &&
+    event.commit?.collection !== undefined &&
+    SUBSCRIBED_COLLECTIONS.has(event.commit.collection)
+  ) {
     const { did } = event;
     const { operation, record } = event.commit;
 
@@ -155,7 +166,10 @@ function connect() {
   const cursor = getCursorStmt.get() as { cursor_us: number } | undefined;
 
   const url = new URL(JETSTREAM_URL);
-  url.searchParams.set("wantedCollections", COLLECTION);
+  // Jetstream's wantedCollections accepts the parameter multiple times to subscribe
+  // to multiple collections. Subscribe to both NSIDs during the dual-publish window.
+  url.searchParams.append("wantedCollections", COLLECTION);
+  url.searchParams.append("wantedCollections", LEGACY_COLLECTION);
   if (cursor) {
     url.searchParams.set("cursor", cursor.cursor_us.toString());
     console.log(`Resuming from cursor: ${cursor.cursor_us}`);
@@ -230,5 +244,5 @@ async function initListManager(): Promise<void> {
 }
 
 // Start
-console.log("DateSky Jetstream subscriber starting...");
+console.log("Nomare Jetstream subscriber starting...");
 initListManager().then(() => connect());

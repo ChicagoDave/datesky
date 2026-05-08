@@ -33,7 +33,7 @@ Find someone interesting? You're already on the same network. DM them on Bluesky
 ### 1. Create a Profile
 You write a profile record to your PDS. This contains your bio, photos, what you're looking for, and your location (as broad or specific as you want).
 
-> **Lexicon note** — the protocol-layer record name is currently `app.datesky.profile`, the original NSID from the project's earlier brand. Existing user records live under that namespace. The migration to `app.nomare.profile` follows a dual-publish pattern (write both, read new-with-fallback) and is recorded in ADR-0003 when that phase begins. See `docs/context/plan.md` for sequencing.
+> **Lexicon note** — the canonical NSID is `app.nomare.profile`. During the rebrand transition the app dual-publishes records to the legacy NSID `app.datesky.profile` as well, so existing user records remain readable while new writes land under the canonical name. Reads try the canonical NSID first and fall back to the legacy NSID. See [ADR-0003](adrs/0003-lexicon-dual-publish.md) for the full strategy.
 
 ### 2. Tag Yourself
 Tags describe who you are and what you're into. These are simple, self-applied labels:
@@ -60,7 +60,7 @@ See someone you're interested in? You're both on Bluesky. Message them. No match
 
 ## Lexicon
 
-One record type per profile, stored in your PDS, keyed as `self` (one per account). The current NSID is `app.datesky.profile` — see the lexicon note above.
+One record type per profile, stored in your PDS, keyed as `self` (one per account). The canonical NSID is `app.nomare.profile`; the legacy `app.datesky.profile` is mirrored during the transition window (ADR-0003).
 
 **Fields:**
 
@@ -79,7 +79,7 @@ One record type per profile, stored in your PDS, keyed as `self` (one per accoun
 
 Only `createdAt` is required. Everything else is optional — fill in what you want.
 
-Tags are just strings on your profile. No taxonomy, no controlled vocabulary. Conventions emerge from usage. The schema lives at [`lexicons/app/datesky/profile.json`](../lexicons/app/datesky/profile.json).
+Tags are just strings on your profile. No taxonomy, no controlled vocabulary. Conventions emerge from usage. The schema lives at [`lexicons/app/nomare/profile.json`](../lexicons/app/nomare/profile.json); the byte-identical legacy schema at [`lexicons/app/datesky/profile.json`](../lexicons/app/datesky/profile.json) is retained during the dual-publish transition.
 
 ---
 
@@ -120,7 +120,7 @@ Some people won't be comfortable with public profiles. That's fine — this isn'
 
 ## Getting Started (Roadmap)
 
-1. **Define the Lexicon schema** — currently `app.datesky.profile` (done: [`lexicons/app/datesky/profile.json`](../lexicons/app/datesky/profile.json)); migration to `app.nomare.profile` per ADR-0003
+1. **Define the Lexicon schema** — `app.nomare.profile` (done: [`lexicons/app/nomare/profile.json`](../lexicons/app/nomare/profile.json)); legacy `app.datesky.profile` retained as dual-publish mirror per [ADR-0003](adrs/0003-lexicon-dual-publish.md)
 2. **Build a simple web UI** for creating and browsing profiles (in progress)
 3. **Seed with early adopters** from the Bluesky community
 4. **Let it grow organically** — lists, tags, and conventions will emerge from real usage

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import type { DateSkyProfile, ProfilePhoto } from "@/lib/atproto/lexicon";
+import type { NomareProfile, ProfilePhoto } from "@/lib/atproto/lexicon";
 import TagInput from "./TagInput";
 import IntentionPicker from "./IntentionPicker";
 import PhotoUpload from "./PhotoUpload";
@@ -46,7 +46,7 @@ export default function ProfileForm() {
         // Fetch existing profile
         const profileRes = await fetch("/api/profile");
         if (profileRes.ok) {
-          const data: DateSkyProfile = await profileRes.json();
+          const data: NomareProfile = await profileRes.json();
           if (data) {
             setDisplayName(data.displayName ?? "");
             setBio(data.bio ?? "");
@@ -75,7 +75,7 @@ export default function ProfileForm() {
 
     setSaving(true);
     try {
-      const record: DateSkyProfile = {
+      const record: NomareProfile = {
         createdAt: createdAt || new Date().toISOString(),
       };
 
