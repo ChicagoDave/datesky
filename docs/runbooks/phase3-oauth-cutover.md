@@ -14,10 +14,10 @@ Run on the operator's workstation, before bringing `nomare.net` live in Phase 4.
 
 ### 1. Capture the rotated private key
 
-The Phase 3 commit ships a fresh `public/jwks.json` (new x/y under `kid: nomare-key-1`). The matching **private** JWK was generated alongside and written to `/tmp/nomare-private-key.json` during the session that produced this commit. It is **not** in the repository.
+The Phase 3 commit ships a fresh `public/jwks.json` (new x/y under `kid: nomare-key-1`). The matching **private** JWK was generated alongside and is held at `~/.nomare-private-key.json.tmp` on the operator workstation (mode `0600`). It is **not** in the repository. Public/private alignment (x, y, kid) was verified against `public/jwks.json` at the end of the session that produced this commit.
 
 ```sh
-cat /tmp/nomare-private-key.json
+cat ~/.nomare-private-key.json.tmp
 ```
 
 The output is a single JSON object: the ES256 private JWK with `kid: nomare-key-1`.
@@ -28,7 +28,7 @@ On the VPS (or wherever `OAUTH_PRIVATE_KEY` is set for production):
 
 ```sh
 # Replace the entire OAUTH_PRIVATE_KEY value with the JSON from step 1.
-# Example shape (do not use these values — use the contents of /tmp/nomare-private-key.json):
+# Example shape (do not use these values — use the contents of ~/.nomare-private-key.json.tmp):
 #   OAUTH_PRIVATE_KEY={"kty":"EC","crv":"P-256","x":"...","y":"...","d":"...","kid":"nomare-key-1"}
 ```
 
@@ -41,13 +41,16 @@ Also confirm `PUBLIC_URL=https://nomare.net` is set in production env.
 ```sh
 # x/y in public/jwks.json should equal x/y in the private JWK.
 jq -r '.keys[0] | {kid, x, y}' public/jwks.json
-jq -r '. | {kid, x, y}' /tmp/nomare-private-key.json
+jq -r '. | {kid, x, y}' ~/.nomare-private-key.json.tmp
 ```
 
 ### 4. Destroy the temp file
 
 ```sh
-shred -u /tmp/nomare-private-key.json   # or: rm -P /tmp/nomare-private-key.json on macOS
+# macOS workstation:
+rm -P ~/.nomare-private-key.json.tmp
+# VPS (after the env is set):
+shred -u <path-to-temp-copy-on-vps>
 ```
 
 ### 5. Pre-deploy comms
