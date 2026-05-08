@@ -13,6 +13,7 @@ import { getSession } from "@/lib/session";
 import { getUserPreferences } from "@/lib/db/queries";
 import SettingsForm from "./SettingsForm";
 import SignOutButton from "@/components/SignOutButton";
+import DeleteAccountSection from "@/components/DeleteAccountSection";
 
 export const runtime = "nodejs";
 
@@ -52,6 +53,13 @@ export default async function SettingsPage() {
           Account
         </h2>
         <SignOutButton />
+      </section>
+
+      <section className="mt-10 pt-6 border-t border-white/10">
+        <h2 className="text-sm font-semibold text-red-300 uppercase tracking-wide mb-3">
+          Danger zone
+        </h2>
+        <DeleteAccountSection />
       </section>
     </main>
   );

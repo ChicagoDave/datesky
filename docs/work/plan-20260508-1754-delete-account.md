@@ -7,15 +7,11 @@
 
 ---
 
-## Pre-Phase Decisions — Resolved 2026-05-08
+## Pre-Phase Decisions — Require User Input Before Phase 1
 
-All five decisions resolved this session. Phase 1 unblocked. Resolution rationale is recorded inline; the full option analysis is preserved below the resolution lines for reference.
+These decisions shape the design. None are pre-decided. The plan surfaces them here so the user can resolve them before implementation begins. At least Decisions 1, 3, and 4 are ADR-worthy (they constrain future sessions).
 
 ### Decision 1 — Dual-namespace deletion ordering and failure semantics
-
-**Resolved: Option A — Delete both; treat `RecordNotFound` as success; abort on any other error.** Codified in **ADR-0004**. Rationale: the about-page promise ("the record disappears from your repo") requires both records gone; `RecordNotFound` is expected for users who joined post-dual-publish; any other error must surface so the user can retry. Idempotent: retries converge cleanly because `RecordNotFound` is silenced.
-
-Original options analysis:
 
 When deleting a user's profile we must delete both `app.nomare.profile/self` (canonical) and `app.datesky.profile/self` (legacy mirror per ADR-0003).
 
@@ -33,10 +29,6 @@ C. **Delete canonical only; rely on ADR-0003 deprecation timeline to clean legac
 
 ### Decision 2 — Belt-and-braces local delete
 
-**Resolved: Option A — synchronous local delete in the API handler; Jetstream is a harmless backup.** No ADR (implementation detail). Duplicate deletes are idempotent. Eliminates the "stale profile flash" race where the user lands on browse before Jetstream fires.
-
-Original options analysis:
-
 The Jetstream subscriber (`scripts/jetstream.ts:142-153`) already handles ATProto `delete` events: it removes the `profiles` row and calls `listManager.removeMemberByDid`. So local state *will* be cleaned — but with an unknown delay (seconds to minutes depending on Jetstream lag).
 
 **Options:**
@@ -50,10 +42,6 @@ B. **Rely solely on Jetstream.** Simpler handler. Risk: a redirect race where th
 ---
 
 ### Decision 3 — Confirmation UX
-
-**Resolved: Option B — Typed `DELETE` confirmation.** Codified in **ADR-0005**. Sets the convention for all future irreversible destructive actions in Nomare. Activation is purely client-side (case-insensitive after trim/uppercase); the API handler does not validate the typed string — friction is a UI guard against accidents, not an auth control.
-
-Original options analysis:
 
 Account deletion is irreversible from the user's perspective (their PDS records are deleted; local state is cleaned; they are logged out).
 
@@ -71,10 +59,6 @@ C. **Password / handle re-entry.** Does not apply here — authentication is ful
 
 ### Decision 4 — Grace period / soft delete
 
-**Resolved: Option A — Immediate hard delete for v1.** Codified in **ADR-0006**. No `deleted_at` columns are added (the ADR makes this a constraint). About-page copy at `src/app/about/page.tsx:71` is honored verbatim. A future ADR may revisit if real user behavior shows accidental-deletion incidents at scale.
-
-Original options analysis:
-
 **Options:**
 
 A. **Immediate hard delete (v1).** Matches the about page promise word-for-word: "Delete your profile from Nomare and the record disappears." No DB migration needed. No scheduled job.
@@ -86,10 +70,6 @@ B. **Soft delete with a 24/72h grace window.** "Mark as deleted" row, background
 ---
 
 ### Decision 5 — Post-delete redirect and messaging
-
-**Resolved: Option B — Dedicated `/goodbye` page.** No ADR (UX choice). Server component, no auth required, no logged-in chrome. Warm short copy. Phase 3 creates `src/app/goodbye/page.tsx`.
-
-Original options analysis:
 
 After successful deletion and sign-out, where does the user land?
 
@@ -113,15 +93,15 @@ C. **Redirect to `/` with no message** (session is cleared; user sees the logged
 - **Domain focus**: Establish the `AccountDeletion` operation's invariants, variants, Behavior Statement, and Integration Reality Statement before any code is written. Resolve Pre-Phase Decisions 1–5 with the user. Write ADRs for Decisions 1, 3, and 4.
 - **Entry state**: This plan is committed. User has read the Pre-Phase Decisions above.
 - **Deliverable**:
-  - Pre-Phase Decisions 1–5 resolved (user provides answers; planner records them as inline resolutions in this plan, mirroring the rebrand plan format) — ✅ resolved 2026-05-08
-  - ADR-0004: dual-namespace deletion semantics and failure handling (Decision 1) — ✅ committed
-  - ADR-0005: confirmation UX pattern for irreversible account actions (Decision 3) — ✅ committed
-  - ADR-0006: hard delete vs. soft delete for v1 (Decision 4) — ✅ committed
-  - Behavior Statement for `deleteAccountForDid(did)` (the to-be-written helper) documented in the session conversation — ✅ produced
-  - Integration Reality Statement for the delete operation documented in the session conversation (covers: owned SQLite DB path, owned Jetstream pipeline, external ATProto PDS) — ✅ produced
+  - Pre-Phase Decisions 1–5 resolved (user provides answers; planner records them as inline resolutions in this plan, mirroring the rebrand plan format)
+  - ADR-0004: dual-namespace deletion semantics and failure handling (Decision 1)
+  - ADR-0005: confirmation UX pattern for irreversible account actions (Decision 3)
+  - ADR-0006: hard delete vs. soft delete for v1 (Decision 4)
+  - Behavior Statement for `deleteAccountForDid(did)` (the to-be-written helper) documented in the session conversation
+  - Integration Reality Statement for the delete operation documented in the session conversation (covers: owned SQLite DB path, owned Jetstream pipeline, external ATProto PDS)
   - No code written in this phase
 - **Exit state**: All five decisions are resolved and recorded. Three ADRs are committed. Behavior Statement and Integration Reality Statement are ready to drive Phase 2 implementation. Phase 2 entry state is satisfied.
-- **Status**: COMPLETE — Phase 2 has begun and landed; see below.
+- **Status**: PENDING
 
 ---
 
@@ -149,7 +129,7 @@ C. **Redirect to `/` with no message** (session is cleared; user sees the logged
     - The ATProto `deleteRecord` call may be stubbed in unit tests since the PDS is external, but the stub must be backed by at least one integration note documenting operator-run verification
   - Test suite passes (`npx tsc --noEmit` clean)
 - **Exit state**: `DELETE /api/account` (or `POST /api/account/delete`) handler is implemented, documented, tested with GREEN-graded tests. No regressions. Type-check clean.
-- **Status**: COMPLETE — landed 2026-05-08. `src/lib/atproto/account-deletion.ts` implements `deleteAccountForDid` per ADR-0004; `src/app/api/account/delete/route.ts` is the POST handler; `scripts/test-account-deletion.ts` is the real-path test (38/38 assertions pass, all GREEN per mutation-verification). `npx tsc --noEmit` clean. `deleteUserPreferences` added to `src/lib/db/queries.ts`; existing `deleteProfile`/`deleteOAuthSession` extended with optional `db` parameter for testability.
+- **Status**: PENDING
 
 ---
 
@@ -170,7 +150,7 @@ C. **Redirect to `/` with no message** (session is cleared; user sees the logged
   - No new API routes in this phase — Phase 2's handler is the backend
   - Manual end-to-end smoke test documented in the PR description (operator verifies: typed confirmation activates button, deletion completes, session is cleared, redirect fires)
 - **Exit state**: A logged-in user can navigate to Settings, initiate account deletion with the required confirmation, and be signed out and redirected. The settings page renders cleanly for non-deleting users (no UI regression). Type-check clean.
-- **Status**: COMPLETE — landed 2026-05-08. `src/components/DeleteAccountSection.tsx` implements the typed-`DELETE` confirmation per ADR-0005; `src/app/settings/page.tsx` adds the Danger Zone section under the existing Account block; `src/app/goodbye/page.tsx` is the warm farewell page per Decision 5B. Hard navigation via `window.location.href` after success ensures the destroyed iron-session cookie is fully shed. About-page copy at `src/app/about/page.tsx:71` verified accurate against the implementation — no change needed. `npx tsc --noEmit` clean; the 38-assertion real-path test still passes.
+- **Status**: PENDING
 
 ---
 

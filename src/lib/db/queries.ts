@@ -1,3 +1,4 @@
+import type Database from "better-sqlite3";
 import { getDb } from "./index";
 import type { NomareProfile } from "../atproto/lexicon";
 
@@ -65,9 +66,28 @@ export function upsertProfile(
   })();
 }
 
-export function deleteProfile(did: string) {
-  const db = getDb();
+/**
+ * Removes the `profiles` row for the given DID. `profile_tags` and `profile_intentions`
+ * cascade automatically per their FOREIGN KEY ... ON DELETE CASCADE clauses in `schema.ts`.
+ * `db` is optional — defaults to the process-wide singleton; pass an explicit handle
+ * to drive a test database in isolation.
+ */
+export function deleteProfile(did: string, db: Database.Database = getDb()) {
   db.prepare("DELETE FROM profiles WHERE did = ?").run(did);
+}
+
+/**
+ * Removes the `user_preferences` row for the given DID. `user_preferences` has no
+ * FK to `profiles`, so this must be called explicitly during account deletion to
+ * avoid leaving orphaned per-user state. See ADR-0006.
+ * `db` is optional — defaults to the process-wide singleton; pass an explicit handle
+ * to drive a test database in isolation.
+ */
+export function deleteUserPreferences(
+  did: string,
+  db: Database.Database = getDb()
+) {
+  db.prepare("DELETE FROM user_preferences WHERE did = ?").run(did);
 }
 
 export function updateHandle(did: string, handle: string) {
@@ -189,8 +209,17 @@ export function getOAuthSession(did: string): string | undefined {
   return row?.session;
 }
 
-export function deleteOAuthSession(did: string) {
-  const db = getDb();
+/**
+ * Removes the OAuth session row for the given DID. Used during sign-out and
+ * account deletion to ensure the server cannot resume the session after the
+ * client cookie is destroyed.
+ * `db` is optional — defaults to the process-wide singleton; pass an explicit handle
+ * to drive a test database in isolation.
+ */
+export function deleteOAuthSession(
+  did: string,
+  db: Database.Database = getDb()
+) {
   db.prepare("DELETE FROM oauth_sessions WHERE did = ?").run(did);
 }
 
