@@ -134,7 +134,13 @@ Original options analysis:
   - If Decision B = hard cutover: all existing OAuth sessions are invalidated; document this in release notes
   - Real-path test (per CLAUDE.md rule 12a): an end-to-end OAuth flow test that (a) initiates an authorization request using the new `client_id`, (b) completes the callback at `https://nomare.net/auth/callback` (can use a staging environment), and (c) confirms a valid session is established. Must exercise the real AT Protocol OAuth stack, not a mock.
 - **Exit state**: `grep "datesky.app" public/client-metadata.json src/lib/atproto/oauth-client.ts` returns nothing. OAuth flow completes successfully against the nomare.net host. `.env.example` is updated.
-- **Status**: CURRENT
+- **Status**: COMPLETE — 2026-05-07
+  - Decision B executed via hard cutover. Files modified: `public/client-metadata.json` (URLs + client_name → Nomare), `src/lib/atproto/oauth-client.ts` (PUBLIC_URL default, kid `nomare-key-1`, client_name, header doc), `src/lib/session.ts` (cookieName `datesky_session` → `nomare_session` — Phase 1 deferred work bundled here, header doc), `.env.example` (PUBLIC_URL default), `scripts/generate-keys.ts` (kid literal + refactored to write `public/jwks.json` directly and route private JWK to stdout), `public/jwks.json` (fresh keypair).
+  - JWKS strategy: option (b) full keypair rotation (operator's call). Fresh ES256 generated; new public JWK committed; matching private JWK kept out of conversation context by routing to `/tmp/nomare-private-key.json` for operator capture. Pre-deploy operator must paste the private JWK into production `OAUTH_PRIVATE_KEY` env, verify x/y/kid alignment, then shred the temp file. Steps documented in `docs/runbooks/phase3-oauth-cutover.md`.
+  - Real-path test (CLAUDE.md rule 12a): not automatable end-to-end (Bluesky consent screen requires human interaction). Captured as an operator-driven verification procedure in `docs/runbooks/phase3-oauth-cutover.md` — to be executed against the live `nomare.net` host after Phase 4 brings the vhost up. Includes `curl` checks on the public documents, browser-driven login + callback, session-cookie shape verification, refresh persistence, and the cross-phase profile read against the dual-publish path.
+  - Forced re-login is the intended user-visible consequence of the cookie + client_id cutover; pre-deploy comms note specified in the runbook.
+  - Phase 4 newly surfaces: `scripts/jetstream-setup.sh` references the systemd unit name `datesky-jetstream.service`, WorkingDirectory `/home/dave/repos/datesky`, and the DB path `data/datesky.db`. `scripts/backfill-list.ts` and `scripts/jetstream.ts` reference the same DB path. All map to the existing Phase 4 deliverable list (DB rename + infra), but the systemd unit name was not previously enumerated — Phase 4 should include it.
+  - Type-check clean.
 
 ### Phase 4: Infrastructure — nomare.net Vhost, TLS, and Reverse Proxy
 - **Tier**: Small
@@ -152,8 +158,9 @@ Original options analysis:
   - Any firewall or rate-limit rules that reference `datesky.app` by name updated
   - NOTE: actual server-side execution (running certbot, reloading nginx) is a manual operator step; this phase produces the configuration files and documents the commands needed
   - Real-path test (per CLAUDE.md rule 12a): `curl -I https://nomare.net/` returns 200 with a valid TLS certificate issued to `nomare.net`. `curl -I https://nomare.net/client-metadata.json` returns the correct JSON with `client_id` pointing to `nomare.net`.
+  - **Surfaced during Phase 3:** `scripts/jetstream-setup.sh` systemd unit name (`datesky-jetstream.service`), the systemd `Description`, the `WorkingDirectory` host path (`/home/dave/repos/datesky`), and the journalctl/systemctl commands printed by the setup script all need to be updated to `nomare-jetstream` and the new host path. `scripts/jetstream.ts` and `scripts/backfill-list.ts` carry the `data/datesky.db` filename reference — bundle with the DB rename per the Phase 1 (b) deferral.
 - **Exit state**: `nomare.net` serves the app over HTTPS. The VPS config files in the repo reflect the new domain. `datesky.app` behaves per the chosen cutover strategy.
-- **Status**: PENDING
+- **Status**: CURRENT
 
 ### Phase 5: GitHub Repository and External Metadata
 - **Tier**: Small

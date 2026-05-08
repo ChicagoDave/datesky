@@ -1,3 +1,16 @@
+/**
+ * AT Protocol OAuth client (server-side singleton).
+ *
+ * Public interface: `getOAuthClient()` — returns the lazily-initialized
+ * `NodeOAuthClient` for this process. State and session stores delegate to
+ * the SQLite tables `oauth_states` and `oauth_sessions`.
+ *
+ * Owner: Identity/Auth bounded context.
+ *
+ * Identity is anchored at `client_id = ${PUBLIC_URL}/client-metadata.json`,
+ * keyed by `kid = nomare-key-1`. Both must match the public document served
+ * at `public/client-metadata.json` and the JWK at `public/jwks.json`.
+ */
 import {
   NodeOAuthClient,
   type NodeSavedSession,
@@ -8,23 +21,28 @@ import { getDb } from "../db/index";
 
 let client: NodeOAuthClient | null = null;
 
+/**
+ * Returns the singleton OAuth client for this process. Initializes on first
+ * call from environment (`PUBLIC_URL`, `OAUTH_PRIVATE_KEY`). Throws if
+ * `OAUTH_PRIVATE_KEY` is unset.
+ */
 export async function getOAuthClient(): Promise<NodeOAuthClient> {
   if (client) return client;
 
   const db = getDb();
-  const publicUrl = process.env.PUBLIC_URL || "https://datesky.app";
+  const publicUrl = process.env.PUBLIC_URL || "https://nomare.net";
   const privateKey = process.env.OAUTH_PRIVATE_KEY;
 
   if (!privateKey) {
     throw new Error("OAUTH_PRIVATE_KEY not set in environment");
   }
 
-  const key = await JoseKey.fromImportable(privateKey, "datesky-key-1");
+  const key = await JoseKey.fromImportable(privateKey, "nomare-key-1");
 
   client = new NodeOAuthClient({
     clientMetadata: {
       client_id: `${publicUrl}/client-metadata.json`,
-      client_name: "DateSky",
+      client_name: "Nomare",
       client_uri: publicUrl,
       redirect_uris: [`${publicUrl}/auth/callback`],
       grant_types: ["authorization_code", "refresh_token"],

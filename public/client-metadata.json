@@ -1,8 +1,8 @@
 {
-  "client_id": "https://datesky.app/client-metadata.json",
-  "client_name": "DateSky",
-  "client_uri": "https://datesky.app",
-  "redirect_uris": ["https://datesky.app/auth/callback"],
+  "client_id": "https://nomare.net/client-metadata.json",
+  "client_name": "Nomare",
+  "client_uri": "https://nomare.net",
+  "redirect_uris": ["https://nomare.net/auth/callback"],
   "grant_types": ["authorization_code", "refresh_token"],
   "scope": "atproto transition:generic",
   "response_types": ["code"],
@@ -10,5 +10,5 @@
   "token_endpoint_auth_method": "private_key_jwt",
   "token_endpoint_auth_signing_alg": "ES256",
   "dpop_bound_access_tokens": true,
-  "jwks_uri": "https://datesky.app/jwks.json"
+  "jwks_uri": "https://nomare.net/jwks.json"
 }
