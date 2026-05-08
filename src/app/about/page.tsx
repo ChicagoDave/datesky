@@ -163,12 +163,12 @@ export default function About() {
           <p className="text-sky-300 text-sm leading-relaxed">
             The code is on GitHub at{" "}
             <a
-              href="https://github.com/chicagodave/datesky"
+              href="https://github.com/ChicagoDave/nomare"
               target="_blank"
               rel="noopener noreferrer"
               className="underline hover:text-white"
             >
-              github.com/chicagodave/datesky
+              github.com/ChicagoDave/nomare
             </a>
             . Issues, pull requests, and feedback are welcome.
           </p>

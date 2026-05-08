@@ -174,7 +174,6 @@ Original options analysis:
   - Any GitHub Actions workflows (`.github/`) that reference the old repo name updated
   - `docs/start.md` GitHub link updated
   - Repository description and topics updated on GitHub (manual step)
-  - `pavilion.so` disposition decision documented: either cancel at next renewal or open a resell inquiry — create a note in `docs/adrs/` or a brief ops note; do not leave it as an untracked liability
 - **Exit state**: All in-repo references to `github.com/chicagodave/datesky` are updated. No `datesky` references remain anywhere in the codebase except historical ADR text and design mockup files (which are intentionally preserved as design history).
 - **Status**: PENDING
 
@@ -187,5 +186,3 @@ Original options analysis:
 **USPTO filing**: not a coding task. Deferred to an administrative session. Must precede any marketing launch per ADR-0002.
 
 **Logo / visual identity**: deferred per Decision D. A follow-on design session will produce the Nomare wordmark with pronunciation cue and update OG image assets.
-
-**pavilion.so domain**: flagged as a sunset asset in ADR-0002. Phase 5 creates a brief ops note; the actual cancellation/resale decision is out of scope for coding sessions.

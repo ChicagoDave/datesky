@@ -13,7 +13,7 @@ The project shipped under the working title **DateSky**, a name derived from the
 
 Constraints surfaced during naming:
 
-- **Trademark clearance must precede commitment.** Prior session attempted Pavilion, registered pavilion.so for $65/yr, then discovered an existing operating community platform (`joinpavilion.com`, 10K+ members, mobile app since 2019) with priority. That mistake is the primary input to this ADR's process discipline.
+- **Trademark clearance must precede commitment.** Prior session attempted Pavilion, investigated pavilion.so as a domain candidate, then discovered an existing operating community platform (`joinpavilion.com`, 10K+ members, mobile app since 2019) with priority. That mistake is the primary input to this ADR's process discipline.
 - **Inclusion-by-design.** Default brand visuals must not lead with queer-first identity defaults — the product affirms all identities but should welcome straight users without making them feel like a minority entrant.
 - **Mineable metaphor pool is exhausted.** Five name finalists this session (Pavilion, Crossing, Loka, Stoa, Vellir) all blocked by prior claimants on the same metaphor. Names with transparent etymology in the gathering/community/threshold space are not clearable.
 
@@ -55,7 +55,7 @@ The following phonetic readings were surfaced and accepted:
 
 ### 5. Rejected alternatives (do not re-litigate)
 
-- **Pavilion** — operating community platform `joinpavilion.com` since 2019, mobile app on App Store and Google Play. Likelihood of confusion in identical category. Domain pavilion.so was registered before clearance and is now a sunset asset.
+- **Pavilion** — operating community platform `joinpavilion.com` since 2019, mobile app on App Store and Google Play. Likelihood of confusion in identical category.
 - **Aviary** — cage/captivity metaphor; aviaries are bird cages. Wrong metaphor for an open-community product.
 - **Crossing** — Animal Crossing (Nintendo, 47M+ unit franchise) cultural collision; railroad-crossing imagery. Marketing-fatal regardless of TM status.
 - **Loka** — Loka Inc. (Silicon Valley software consultancy, AWS Innovation Partner of the Year) holds .com; Loka World (operating chat/dating app on Google Play); Loka Minecraft community.
@@ -75,9 +75,8 @@ This ADR constrains:
 - **Onboarding copy**: must teach pronunciation early. Suggested approach — surface the Italian etymology as a small explainer ("Nomare — Italian, *to call by name*") so users encounter the right reading before they invent one.
 - **Marketing tone**: the brand voice can lean into the "to call by name" frame — addressed-by-name is a thematically clean fit for dating + friends + community.
 - **SEO**: nomare.com will continue to redirect curious users to a dormant Dutch parked page; this is a permanent drag until/unless acquired. A future session may consider an outreach offer to the registrant; until then, the .net is canonical.
-- **Pavilion.so**: held under the prior brand decision; this ADR makes it a sunset asset. Decision deferred — cancel at next renewal or resell.
 - **Trademark filing**: any future ADR proposing a brand-adjacent product (e.g., a separate app under a related name) must respect the Class 9 + 45 filings made under this ADR.
-- **Future naming sessions** (if any): must trademark-check a candidate **before** the user develops attachment, before any domain registration, and before any visual-identity work. The session-20260506 process failure (Pavilion: registered domain, built mockup, then discovered the conflict) is the canonical example to avoid.
+- **Future naming sessions** (if any): must trademark-check a candidate **before** the user develops attachment, before any domain registration, and before any visual-identity work. The session-20260506 process failure (Pavilion: name selection and mockup work before trademark clearance) is the canonical example to avoid.
 
 ## Future Work Enabled
 

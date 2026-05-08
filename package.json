@@ -15,15 +15,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ChicagoDave/datesky.git"
+    "url": "git+https://github.com/ChicagoDave/nomare.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/ChicagoDave/datesky/issues"
+    "url": "https://github.com/ChicagoDave/nomare/issues"
   },
-  "homepage": "https://github.com/ChicagoDave/datesky#readme",
+  "homepage": "https://github.com/ChicagoDave/nomare#readme",
   "dependencies": {
     "@atproto/api": "^0.18.21",
     "@atproto/jwk-jose": "^0.1.11",
