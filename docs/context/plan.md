@@ -89,7 +89,13 @@ Original options analysis:
   - All files that reference "DateSky" in comments-only updated
   - NOTE: `COLLECTION` constant in `lexicon.ts`, `client_id` in `oauth-client.ts`, and `public/client-metadata.json` are intentionally deferred to Phase 2 and Phase 3
 - **Exit state**: `grep -r "DateSky\|datesky" src/ --include="*.ts" --include="*.tsx"` returns only the lexicon COLLECTION constant and the OAuth publicUrl default — nothing else. `package.json` references Nomare. `docs/start.md` is updated.
-- **Status**: CURRENT
+- **Status**: COMPLETE — 2026-05-07
+  - Decision (a) at execution time: cookie rename in `src/lib/session.ts` deferred to **Phase 3** (bundle the forced re-login with the OAuth hard cutover so users only re-login once).
+  - Decision (b) at execution time: DB filename `data/datesky.db` retained with header comment in `src/lib/db/index.ts`; rename bundled with **Phase 4** infra migration (avoids a one-off VPS copy/symlink step).
+  - Decision (c) at execution time: `package.json` `repository.url` / `homepage` / `bugs.url` and the `github.com/chicagodave/datesky` link in `src/app/about/page.tsx` are left for **Phase 5** (simultaneous with the actual GitHub repo rename so URLs don't 404 in the meantime).
+  - Residual `datesky` refs in `src/` (verified): lexicon COLLECTION + `DateSkyProfile` interface (Phase 2); OAuth `publicUrl`/key id/`client_name` (Phase 3); `cookieName` in `session.ts` (Phase 3); db filename in `db/index.ts` (Phase 4); GitHub URL in `about/page.tsx` (Phase 5). All deferred categories match the per-phase deliverable lists.
+  - Removed the "working title — open to a better one" paragraph from About; brand is locked.
+  - About page gained an "About the name" section with etymology and pronunciation per ADR-0002.
 
 ### Phase 2: AT Protocol Lexicon Namespace Migration
 - **Tier**: Medium
@@ -108,7 +114,7 @@ Original options analysis:
   - ADR-0003 written explaining why `app.datesky.*` is retained as a permanent protocol identifier
   - No lexicon file renames
 - **Exit state**: `COLLECTION` in `lexicon.ts` matches the chosen namespace. ADR-0003 is committed. Real-path test passes against a live (dev or staging) PDS.
-- **Status**: PENDING
+- **Status**: CURRENT
 
 ### Phase 3: OAuth Client Re-registration at nomare.net
 - **Tier**: Medium

@@ -5,14 +5,14 @@
  * Owner context: layout chrome.
  *
  * Carries the affiliation disclaimer and the AT Protocol attribution.
- * Required for trademark hygiene — DateSky is independent of Bluesky Social PBC.
+ * Required for trademark hygiene — Nomare is independent of Bluesky Social PBC.
  */
 export default function Footer() {
   return (
     <footer className="border-t border-white/10 mt-16 py-6 px-4">
       <div className="max-w-5xl mx-auto text-center text-xs text-white/50 space-y-1.5">
         <p>
-          DateSky is an independent project. Not affiliated with, endorsed by,
+          Nomare is an independent project. Not affiliated with, endorsed by,
           or sponsored by Bluesky Social PBC.
         </p>
         <p>

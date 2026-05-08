@@ -4,7 +4,7 @@
  * Public interface: GET returns current prefs (or defaults); POST upserts and returns the new prefs.
  * Owner context: settings UI for the authenticated viewer.
  *
- * Per ADR 0001, these preferences are private to DateSky's database and must never
+ * Per ADR 0001, these preferences are private to Nomare's database and must never
  * be written to the user's PDS. Both handlers reject unauthenticated callers.
  *
  * POST applies these invariants before persisting (ADR 0001 §"Age range floors"):

@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "About — DateSky",
+  title: "About — Nomare",
   description:
-    "How DateSky works: open dating on the AT Protocol network, your data in your own repo. Independent project, not affiliated with Bluesky Social PBC.",
+    "How Nomare works: open dating on the AT Protocol network, your data in your own repo. Independent project, not affiliated with Bluesky Social PBC.",
 };
 
 export default function About() {
@@ -14,7 +14,7 @@ export default function About() {
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">
             How{" "}
             <span className="bg-gradient-to-r from-[#d60270] via-[#9b4f96] to-[#0038a8] bg-clip-text text-transparent">
-              DateSky
+              Nomare
             </span>{" "}
             works
           </h1>
@@ -22,9 +22,19 @@ export default function About() {
         </header>
 
         <section className="space-y-4">
-          <h2 className="text-2xl font-semibold">Why DateSky exists</h2>
+          <h2 className="text-2xl font-semibold">About the name</h2>
+          <p className="text-sky-200 leading-relaxed">
+            <strong className="text-white">Nomare</strong> is archaic Italian
+            for <em>to call by name</em>. Pronounced{" "}
+            <em>no-MAR-ay</em> — three syllables, open vowel ending. The name
+            asks people to be themselves, openly.
+          </p>
+        </section>
+
+        <section className="space-y-4">
+          <h2 className="text-2xl font-semibold">Why Nomare exists</h2>
           <blockquote className="border-l-4 border-[#d60270] pl-6 py-2 text-lg text-sky-100 italic leading-relaxed">
-            I created DateSky because current dating apps make billions of
+            I created Nomare because current dating apps make billions of
             dollars walling people off from each other and gamifying
             connections. It&apos;s scary to put yourself out there on a public
             dating site, but it&apos;s how you build a community and truly find
@@ -36,7 +46,7 @@ export default function About() {
           <h2 className="text-2xl font-semibold">Where your data lives</h2>
           <p className="text-sky-200 leading-relaxed">
             Your profile is a record in <em>your</em> Bluesky repo. Not on a
-            DateSky server.
+            Nomare server.
           </p>
           <ul className="space-y-3 text-sky-200">
             <li className="flex gap-3">
@@ -52,13 +62,13 @@ export default function About() {
             <li className="flex gap-3">
               <span className="text-[#d60270] flex-shrink-0">·</span>
               <span>
-                Photos are blobs in your PDS — DateSky never stores image bytes.
+                Photos are blobs in your PDS — Nomare never stores image bytes.
               </span>
             </li>
             <li className="flex gap-3">
               <span className="text-[#d60270] flex-shrink-0">·</span>
               <span>
-                Delete your profile from DateSky and the record disappears from
+                Delete your profile from Nomare and the record disappears from
                 your repo and from everyone who indexes it.
               </span>
             </li>
@@ -74,19 +84,19 @@ export default function About() {
         <section className="space-y-4">
           <h2 className="text-2xl font-semibold">How moderation works</h2>
           <p className="text-sky-200 leading-relaxed">
-            DateSky inherits the open AT Protocol moderation floor:
+            Nomare inherits the open AT Protocol moderation floor:
           </p>
           <ul className="space-y-3 text-sky-200">
             <li className="flex gap-3">
               <span className="text-[#9b4f96] flex-shrink-0">·</span>
               <span>
-                Account suspended on Bluesky → can&apos;t sign in to DateSky.
+                Account suspended on Bluesky → can&apos;t sign in to Nomare.
               </span>
             </li>
             <li className="flex gap-3">
               <span className="text-[#9b4f96] flex-shrink-0">·</span>
               <span>
-                Photo taken down on Bluesky → photo disappears from DateSky
+                Photo taken down on Bluesky → photo disappears from Nomare
                 automatically.
               </span>
             </li>
@@ -96,7 +106,7 @@ export default function About() {
             </li>
           </ul>
           <p className="text-sky-200 leading-relaxed">
-            Beyond that floor, DateSky will add its own community standards over
+            Beyond that floor, Nomare will add its own community standards over
             time. When we do, we&apos;ll say what they are.
           </p>
         </section>
@@ -163,20 +173,7 @@ export default function About() {
             . Issues, pull requests, and feedback are welcome.
           </p>
           <p className="text-sky-300 text-sm leading-relaxed">
-            The name &ldquo;DateSky&rdquo; is a working title — we&apos;re open
-            to a better one. If you have a suggestion, please open a{" "}
-            <a
-              href="https://github.com/chicagodave/datesky/issues/new"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline hover:text-white"
-            >
-              GitHub issue
-            </a>
-            .
-          </p>
-          <p className="text-sky-300 text-sm leading-relaxed">
-            DateSky is not affiliated with, endorsed by, or sponsored by
+            Nomare is not affiliated with, endorsed by, or sponsored by
             Bluesky Social PBC. Built on the open{" "}
             <a
               href="https://atproto.com"

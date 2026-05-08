@@ -126,7 +126,7 @@ export default function ProfileForm() {
           onChange={(e) => setDisplayName(e.target.value)}
           maxLength={64}
           className="w-full bg-sky-900/50 border border-sky-700 rounded-lg px-4 py-2 text-white placeholder-sky-500 focus:outline-none focus:border-sky-400"
-          placeholder="Your name on DateSky"
+          placeholder="Your name on Nomare"
         />
       </div>
 

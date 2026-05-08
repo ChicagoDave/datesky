@@ -13,24 +13,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { did } = await params;
   const decodedDid = decodeURIComponent(did);
   const resolved = await resolveDid(decodedDid);
-  if (!resolved) return { title: "Profile Not Found — DateSky" };
+  if (!resolved) return { title: "Profile Not Found — Nomare" };
 
   const profile = await fetchProfileFromPds(decodedDid, resolved.pdsHost);
-  if (!profile) return { title: "Profile Not Found — DateSky" };
+  if (!profile) return { title: "Profile Not Found — Nomare" };
 
   const name = profile.displayName || resolved.handle || decodedDid;
   const description = profile.bio
     ? profile.bio.slice(0, 160)
-    : `${name} on DateSky`;
+    : `${name} on Nomare`;
 
   return {
-    title: `${name} — DateSky`,
+    title: `${name} — Nomare`,
     description,
     openGraph: {
-      title: `${name} — DateSky`,
+      title: `${name} — Nomare`,
       description,
       type: "profile",
-      siteName: "DateSky",
+      siteName: "Nomare",
     },
   };
 }

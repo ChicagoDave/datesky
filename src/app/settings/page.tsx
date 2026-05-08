@@ -4,7 +4,7 @@
  * Public interface: server component that gates on session and renders the form client.
  * Owner context: settings.
  *
- * Per ADR 0001, every preference managed here is private to DateSky's database.
+ * Per ADR 0001, every preference managed here is private to Nomare's database.
  * Future match-mode preferences will live in the same form alongside photos and compact view.
  */
 import type { Metadata } from "next";
@@ -17,8 +17,8 @@ import SignOutButton from "@/components/SignOutButton";
 export const runtime = "nodejs";
 
 export const metadata: Metadata = {
-  title: "Settings — DateSky",
-  description: "Your viewing preferences for DateSky.",
+  title: "Settings — Nomare",
+  description: "Your viewing preferences for Nomare.",
 };
 
 export default async function SettingsPage() {
@@ -34,7 +34,7 @@ export default async function SettingsPage() {
       <header className="mb-10 space-y-2">
         <h1 className="text-3xl font-bold">Settings</h1>
         <p className="text-sky-300 text-sm">
-          These preferences are private. They never leave DateSky&apos;s database.
+          These preferences are private. They never leave Nomare&apos;s database.
         </p>
       </header>
 

@@ -5,7 +5,7 @@ import MobileTabBar from "@/components/MobileTabBar";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "DateSky — Open Dating on the Atmosphere",
+  title: "Nomare — Open Dating on the Atmosphere",
   description:
     "Create a dating profile on the AT Protocol network. No app, no algorithm, no company — just an open standard. Independent project, not affiliated with Bluesky Social PBC.",
 };

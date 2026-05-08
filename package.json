@@ -1,7 +1,7 @@
 {
-  "name": "datesky",
+  "name": "nomare",
   "version": "1.0.0",
-  "description": "",
+  "description": "Nomare — open dating on the AT Protocol network. Your data, in your repo, on the open web.",
   "main": "index.js",
   "directories": {
     "doc": "docs"

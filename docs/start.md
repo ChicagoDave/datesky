@@ -1,8 +1,12 @@
-# DateSky: Open Dating on AT Protocol
+# Nomare: Open Community on AT Protocol
+
+> **Nomare** — archaic Italian, *to call by name*. Pronounced *no-MAR-ay*.
 
 ## The Idea
 
-Create a dating profile on the atproto network. Tag yourself with what you're about and what you're looking for. People find each other through lists, tags, and the social graph that already exists on Bluesky. That's it.
+Nomare is an open community on the AT Protocol network. Make a profile. Tag yourself with what you're about and what you're looking for. Find each other through lists, tags, and the social graph that already exists on Bluesky. That's it.
+
+The first surface is dating. The longer arc is broader — *Dating, Friends, Community* — three intentions a single profile can carry, separately or together. The current schema and UI focus on dating; the trifecta is the direction the product is going.
 
 No app to download. No algorithm deciding who you see. No company in the middle. Just an open standard anyone can opt in to.
 
@@ -11,7 +15,7 @@ No app to download. No algorithm deciding who you see. No company in the middle.
 ## Why atproto
 
 ### Real Identity
-Your dating profile is tied to your existing Bluesky handle and DID. No burner accounts, no catfishing — your social history is right there.
+Your Nomare profile is tied to your existing Bluesky handle and DID. No burner accounts, no catfishing — your social history is right there.
 
 ### Your Data, Your PDS
 Your profile lives in your Personal Data Server. You can delete it anytime. Nobody else controls it.
@@ -27,7 +31,9 @@ Find someone interesting? You're already on the same network. DM them on Bluesky
 ## How It Works
 
 ### 1. Create a Profile
-You write a `app.datesky.profile` record to your PDS. This contains your dating bio, photos, what you're looking for, and your location (as broad or specific as you want).
+You write a profile record to your PDS. This contains your bio, photos, what you're looking for, and your location (as broad or specific as you want).
+
+> **Lexicon note** — the protocol-layer record name is currently `app.datesky.profile`, the original NSID from the project's earlier brand. Existing user records live under that namespace. The migration to `app.nomare.profile` follows a dual-publish pattern (write both, read new-with-fallback) and is recorded in ADR-0003 when that phase begins. See `docs/context/plan.md` for sequencing.
 
 ### 2. Tag Yourself
 Tags describe who you are and what you're into. These are simple, self-applied labels:
@@ -39,11 +45,11 @@ Tags describe who you are and what you're into. These are simple, self-applied l
 Tags are freeform but conventions will emerge from usage. Common ones get listed, niche ones still work.
 
 ### 3. Browse Lists and Tags
-Anyone can create and curate lists — just like Bluesky lists but for dating profiles:
+Anyone can create and curate lists — just like Bluesky lists but for community profiles:
 
 - **"Queer Portland"** — a community-maintained list
 - **"Hikers Looking for Hikers"** — interest-based
-- **"New to DateSky This Week"** — freshness-based
+- **"New to Nomare This Week"** — freshness-based
 
 You can also just search by tags directly.
 
@@ -54,14 +60,14 @@ See someone you're interested in? You're both on Bluesky. Message them. No match
 
 ## Lexicon
 
-One record type: `app.datesky.profile` — stored in your PDS, keyed as `self` (one per account).
+One record type per profile, stored in your PDS, keyed as `self` (one per account). The current NSID is `app.datesky.profile` — see the lexicon note above.
 
 **Fields:**
 
 | Field | Type | Description |
 |---|---|---|
-| `displayName` | string | Name for your dating profile |
-| `bio` | string | Free-form dating bio (up to 1024 characters) |
+| `displayName` | string | Name for your profile |
+| `bio` | string | Free-form bio (up to 1024 characters) |
 | `photos` | array of blobs | Up to 6 profile photos with alt text |
 | `intentions` | array of strings | What you're looking for: `dating`, `friends`, `casual`, `long-term`, or your own |
 | `location` | string | As broad or specific as you want |
@@ -79,12 +85,12 @@ Tags are just strings on your profile. No taxonomy, no controlled vocabulary. Co
 
 ## Privacy Considerations
 
-atproto records are public by default. People opting in to DateSky should understand that their dating profile is visible on the network, just like a Bluesky post. This is a feature for some and a dealbreaker for others.
+atproto records are public by default. People opting in to Nomare should understand that their profile is visible on the network, just like a Bluesky post. This is a feature for some and a dealbreaker for others.
 
 Possible future work:
 - Unlisted profiles (discoverable via tags/lists but not indexed publicly)
 - Private fields visible only to specific people
-- The atproto ecosystem is still evolving on privacy — DateSky can adopt new primitives as they appear
+- The atproto ecosystem is still evolving on privacy — Nomare can adopt new primitives as they appear
 
 For now, this is for people comfortable with an open profile.
 
@@ -108,21 +114,22 @@ People need to know it exists and feel like there are enough people using it in 
 Open systems can be abused. Bluesky's existing block/report/label infrastructure helps. Community-maintained lists can also delist bad actors.
 
 ### Privacy
-Some people won't be comfortable with public dating profiles. That's fine — this isn't for everyone, and better privacy tooling may come with time.
+Some people won't be comfortable with public profiles. That's fine — this isn't for everyone, and better privacy tooling may come with time.
 
 ---
 
 ## Getting Started (Roadmap)
 
-1. **Define the Lexicon schema** — `app.datesky.profile` (done: [`lexicons/app/datesky/profile.json`](../lexicons/app/datesky/profile.json))
-2. **Build a simple web UI** for creating and browsing profiles
+1. **Define the Lexicon schema** — currently `app.datesky.profile` (done: [`lexicons/app/datesky/profile.json`](../lexicons/app/datesky/profile.json)); migration to `app.nomare.profile` per ADR-0003
+2. **Build a simple web UI** for creating and browsing profiles (in progress)
 3. **Seed with early adopters** from the Bluesky community
 4. **Let it grow organically** — lists, tags, and conventions will emerge from real usage
+5. **Open the trifecta** — extend intentions so a single profile carries Dating, Friends, and Community independently
 
 ---
 
-**DateSky: Make a profile. Tag yourself. Find each other.**
+**Nomare: Make a profile. Tag yourself. Find each other.**
 
 ---
 
-*Concept by David — February 2026*
+*Concept by David — February 2026; rebranded to Nomare May 2026 (see [`docs/adrs/0002-brand-nomare.md`](adrs/0002-brand-nomare.md))*
