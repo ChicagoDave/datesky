@@ -2,10 +2,7 @@ import Database from "better-sqlite3";
 import path from "path";
 import { initSchema } from "./schema";
 
-// Filename retained as `datesky.db` post-rebrand: server-side only, never user-facing.
-// Renaming requires a copy/symlink step on the production VPS — bundled with the
-// Phase 4 infrastructure migration (see docs/context/plan.md).
-const DB_PATH = path.join(process.cwd(), "data", "datesky.db");
+const DB_PATH = path.join(process.cwd(), "data", "nomare.db");
 
 let db: Database.Database | null = null;
 

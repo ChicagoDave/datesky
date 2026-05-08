@@ -1,0 +1,16 @@
+[Unit]
+Description=Nomare Next.js App
+After=network.target
+
+[Service]
+Type=simple
+User=dave
+WorkingDirectory=/home/dave/repos/datesky
+ExecStart=/usr/bin/npm start
+Restart=on-failure
+RestartSec=5
+Environment=NODE_ENV=production
+Environment=PORT=3003
+
+[Install]
+WantedBy=multi-user.target

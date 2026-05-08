@@ -4,9 +4,9 @@
 
 set -e
 
-cat > /etc/systemd/system/datesky-jetstream.service <<EOF
+cat > /etc/systemd/system/nomare-jetstream.service <<EOF
 [Unit]
-Description=DateSky Jetstream Subscriber
+Description=Nomare Jetstream Subscriber
 After=network.target
 
 [Service]
@@ -23,8 +23,8 @@ WantedBy=multi-user.target
 EOF
 
 systemctl daemon-reload
-systemctl enable datesky-jetstream
+systemctl enable nomare-jetstream
 
-echo "Created datesky-jetstream.service"
-echo "Start with: sudo systemctl start datesky-jetstream"
-echo "Logs: journalctl -u datesky-jetstream -f"
+echo "Created nomare-jetstream.service"
+echo "Start with: sudo systemctl start nomare-jetstream"
+echo "Logs: journalctl -u nomare-jetstream -f"

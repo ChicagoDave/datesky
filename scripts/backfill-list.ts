@@ -4,7 +4,7 @@ import { initSchema } from "../src/lib/db/schema";
 import { getAgent } from "../src/lib/atproto/agent";
 import { ListManager } from "../src/lib/atproto/list-manager";
 
-const DB_PATH = path.join(process.cwd(), "data", "datesky.db");
+const DB_PATH = path.join(process.cwd(), "data", "nomare.db");
 const LIST_OWNER_DID = process.env.DATESKY_LIST_OWNER_DID;
 const LIST_URI = process.env.DATESKY_LIST_URI;
 

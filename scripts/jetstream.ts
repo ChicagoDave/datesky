@@ -17,7 +17,7 @@ const SUBSCRIBED_COLLECTIONS = new Set<string>([COLLECTION, LEGACY_COLLECTION]);
 const JETSTREAM_URL = "wss://jetstream2.us-east.bsky.network/subscribe";
 const CURSOR_SAVE_INTERVAL = 100; // Save cursor every N events
 
-const DB_PATH = path.join(process.cwd(), "data", "datesky.db");
+const DB_PATH = path.join(process.cwd(), "data", "nomare.db");
 const db = new Database(DB_PATH);
 db.pragma("journal_mode = WAL");
 db.pragma("foreign_keys = ON");

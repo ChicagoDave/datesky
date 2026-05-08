@@ -1,15 +1,15 @@
 #!/bin/bash
-# DateSky setup script — run with sudo
+# Nomare setup script — run with sudo
 # Usage: sudo bash setup.sh
 
 set -e
 
-DOMAIN="datesky.app"
+DOMAIN="nomare.net"
 APP_DIR="/home/dave/repos/datesky"
 PORT=3003
 USER="dave"
 
-echo "=== DateSky Setup ==="
+echo "=== Nomare Setup ==="
 echo ""
 
 # 1. Apache vhost (HTTP — redirect to HTTPS)
@@ -70,9 +70,9 @@ systemctl reload apache2
 
 # 5. Create systemd service for Next.js
 echo "[5/5] Creating systemd service..."
-cat > /etc/systemd/system/datesky.service <<EOF
+cat > /etc/systemd/system/nomare.service <<EOF
 [Unit]
-Description=DateSky Next.js App
+Description=Nomare Next.js App
 After=network.target
 
 [Service]
@@ -90,17 +90,17 @@ WantedBy=multi-user.target
 EOF
 
 systemctl daemon-reload
-systemctl enable datesky
+systemctl enable nomare
 
 echo ""
 echo "=== Setup complete ==="
 echo ""
 echo "Apache vhosts: ${DOMAIN}.conf, ${DOMAIN}-le-ssl.conf"
 echo "TLS cert:      /etc/letsencrypt/live/${DOMAIN}/"
-echo "Systemd unit:  datesky.service"
+echo "Systemd unit:  nomare.service"
 echo "App port:      ${PORT}"
 echo ""
 echo "Next steps:"
 echo "  1. cd ${APP_DIR} && npm install && npm run build"
-echo "  2. sudo systemctl start datesky"
+echo "  2. sudo systemctl start nomare"
 echo "  3. Visit https://${DOMAIN}"

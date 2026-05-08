@@ -1,0 +1,15 @@
+[Unit]
+Description=Nomare Jetstream Subscriber
+After=network.target
+
+[Service]
+Type=simple
+User=dave
+WorkingDirectory=/home/dave/repos/datesky
+ExecStart=/usr/bin/npx tsx scripts/jetstream.ts
+Restart=on-failure
+RestartSec=10
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target
