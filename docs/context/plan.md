@@ -160,7 +160,11 @@ Original options analysis:
   - Real-path test (per CLAUDE.md rule 12a): `curl -I https://nomare.net/` returns 200 with a valid TLS certificate issued to `nomare.net`. `curl -I https://nomare.net/client-metadata.json` returns the correct JSON with `client_id` pointing to `nomare.net`.
   - **Surfaced during Phase 3:** `scripts/jetstream-setup.sh` systemd unit name (`datesky-jetstream.service`), the systemd `Description`, the `WorkingDirectory` host path (`/home/dave/repos/datesky`), and the journalctl/systemctl commands printed by the setup script all need to be updated to `nomare-jetstream` and the new host path. `scripts/jetstream.ts` and `scripts/backfill-list.ts` carry the `data/datesky.db` filename reference — bundle with the DB rename per the Phase 1 (b) deferral.
 - **Exit state**: `nomare.net` serves the app over HTTPS. The VPS config files in the repo reflect the new domain. `datesky.app` behaves per the chosen cutover strategy.
-- **Status**: CURRENT
+- **Status**: COMPLETE — 2026-05-08
+  - Step A (`5e614b3`): nomare.net Apache vhosts (`scripts/apache/nomare.net.conf`, `scripts/apache/nomare.net-le-ssl.conf`) live with Let's Encrypt; reverse proxy to `:3003` verified; OAuth login working end-to-end after rotating production `.env` `OAUTH_PRIVATE_KEY` to the `nomare-key-1` private JWK and flipping `PUBLIC_URL` to `https://nomare.net`. Two split-JSX brand misses fixed (`src/components/Nav.tsx`, `src/app/profile/edit/page.tsx`).
+  - Decision C executed early (`bf7e656`): rather than holding `datesky.app` as a parallel functional host, the Phase 3 hard cutover had already invalidated its OAuth value, so a 301-on-all-paths vhost (`scripts/apache/datesky.app-le-ssl.conf`) was the natural shape. ADR-0002 errata committed in the same commit (corrected the incorrect claim that `pavilion.so` had been registered).
+  - Step B (`f575571`): DB filename rename `data/datesky.db` → `data/nomare.db` (the Phase 1 (b) deferral); systemd unit `datesky-jetstream.service` → `nomare-jetstream.service`; `scripts/jetstream-setup.sh`, `scripts/jetstream.ts`, `scripts/backfill-list.ts` updated to match.
+  - Plover repo dir + ops scripts (`65caa6b`): on-VPS repo path renamed `~/repos/datesky` → `~/repos/nomare`; `deploy.sh` and `backup.sh` adopted into the repo to reflect the new paths and DB filename.
 
 ### Phase 5: GitHub Repository and External Metadata
 - **Tier**: Small
@@ -175,7 +179,11 @@ Original options analysis:
   - `docs/start.md` GitHub link updated
   - Repository description and topics updated on GitHub (manual step)
 - **Exit state**: All in-repo references to `github.com/chicagodave/datesky` are updated. No `datesky` references remain anywhere in the codebase except historical ADR text and design mockup files (which are intentionally preserved as design history).
-- **Status**: PENDING
+- **Status**: COMPLETE — 2026-05-08
+  - GitHub repo renamed `chicagodave/datesky` → `ChicagoDave/nomare` (operator-side). In-repo URL flips landed in `bf7e656`: `package.json` `repository.url` / `homepage` / `bugs.url` and the `github.com/...` link in `src/app/about/page.tsx`.
+  - `docs/start.md` audited: remaining `datesky` references are intentional dual-publish history per ADR-0003 (lexicon NSID transition), not stale GitHub URLs.
+  - No `.github/` workflows directory exists, so no Actions config to update.
+  - GitHub repo metadata updated via `gh repo edit`: description = "Nomare — open dating on the AT Protocol network. Your data, in your repo, on the open web."; homepage = `https://nomare.net`; topics = `atproto`, `bluesky`, `dating`, `nextjs`, `typescript`.
 
 ---
 
