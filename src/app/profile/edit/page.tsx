@@ -13,7 +13,11 @@ export default async function EditProfilePage() {
   return (
     <main className="max-w-2xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">
-        Edit Your Date<span className="text-sky-400">Sky</span> Profile
+        Edit Your{" "}
+        <span className="bg-gradient-to-r from-[#d60270] via-[#9b4f96] to-[#0038a8] bg-clip-text text-transparent">
+          Nomare
+        </span>{" "}
+        Profile
       </h1>
       <ProfileForm />
     </main>

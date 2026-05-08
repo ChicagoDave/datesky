@@ -39,9 +39,8 @@ export default function Nav() {
     <nav className="border-b border-white/10 bg-[#0f0817]/80 backdrop-blur-sm sticky top-0 z-50">
       <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
         <Link href="/" className="text-xl font-bold flex-shrink-0">
-          Date
           <span className="bg-gradient-to-r from-[#d60270] via-[#9b4f96] to-[#0038a8] bg-clip-text text-transparent">
-            Sky
+            Nomare
           </span>
         </Link>
 
