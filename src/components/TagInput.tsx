@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { isValidProfileTag } from "@/lib/profile/tag-validation";
 
 interface TagInputProps {
   tags: string[];
@@ -10,12 +11,31 @@ interface TagInputProps {
 
 export default function TagInput({ tags, onChange, max = 32 }: TagInputProps) {
   const [input, setInput] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   function addTag(value: string) {
     const tag = value.trim().toLowerCase().replace(/^#/, "");
-    if (!tag || tags.includes(tag) || tags.length >= max) return;
+    if (!tag) {
+      setError(null);
+      return;
+    }
+    if (tags.length >= max) {
+      setError(null);
+      return;
+    }
+    if (tags.includes(tag)) {
+      setError(null);
+      setInput("");
+      return;
+    }
+    const result = isValidProfileTag(tag);
+    if (!result.ok) {
+      setError(result.reason);
+      return;
+    }
     onChange([...tags, tag]);
     setInput("");
+    setError(null);
   }
 
   function removeTag(index: number) {
@@ -54,13 +74,21 @@ export default function TagInput({ tags, onChange, max = 32 }: TagInputProps) {
       <input
         type="text"
         value={input}
-        onChange={(e) => setInput(e.target.value)}
+        onChange={(e) => {
+          setInput(e.target.value);
+          if (error) setError(null);
+        }}
         onKeyDown={handleKeyDown}
         onBlur={() => input && addTag(input)}
         placeholder={tags.length >= max ? "Max tags reached" : "Add a tag..."}
         disabled={tags.length >= max}
         className="w-full bg-sky-900/50 border border-sky-700 rounded-lg px-4 py-2 text-white placeholder-sky-500 focus:outline-none focus:border-sky-400"
       />
+      {error && (
+        <p className="text-red-400 text-xs mt-1" role="alert">
+          {error}
+        </p>
+      )}
       <p className="text-sky-600 text-xs mt-1">
         {tags.length}/{max} tags. Press Enter or comma to add.
       </p>

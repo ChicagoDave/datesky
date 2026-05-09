@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAgent } from "@/lib/atproto/agent";
 import { getSession } from "@/lib/session";
 import { COLLECTION, LEGACY_COLLECTION, RKEY } from "@/lib/atproto/lexicon";
+import { isValidProfileTag } from "@/lib/profile/tag-validation";
 
 export const runtime = "nodejs";
 
@@ -73,6 +74,28 @@ export async function PUT(req: NextRequest) {
         { error: "Must be 18 or older" },
         { status: 400 }
       );
+    }
+
+    // Defense in depth — the TagInput component validates client-side, but a
+    // direct API caller (or a future Nomare client) must not be able to pollute
+    // the published record or the local tag index with URL-shaped strings.
+    if (Array.isArray(record.tags)) {
+      const invalid: { tag: unknown; reason: string }[] = [];
+      for (const tag of record.tags) {
+        const result =
+          typeof tag === "string"
+            ? isValidProfileTag(tag)
+            : { ok: false as const, reason: "tag must be a string" };
+        if (!result.ok) {
+          invalid.push({ tag, reason: result.reason });
+        }
+      }
+      if (invalid.length > 0) {
+        return NextResponse.json(
+          { error: "Invalid tag(s)", invalid },
+          { status: 400 }
+        );
+      }
     }
 
     if (!record.createdAt) {
