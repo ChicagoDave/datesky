@@ -1,6 +1,7 @@
 import type Database from "better-sqlite3";
 import { getDb } from "./index";
 import type { NomareProfile } from "../atproto/lexicon";
+import { isValidProfileTag } from "../profile/tag-validation";
 
 export interface IndexedProfile {
   did: string;
@@ -18,22 +19,48 @@ export interface IndexedProfile {
   intentions?: string[];
 }
 
+/**
+ * Upsert a profile and its tag/intention sets into the local index.
+ *
+ * Tags are filtered through `isValidProfileTag` before insertion: tags that
+ * fail the shape rule (URLs, whitespace, uppercase, dots, slashes, etc.) are
+ * silently dropped. This is defense in depth at the indexer boundary so a
+ * Jetstream replay cannot re-pollute `profile_tags` after an operator-run
+ * cleanup. The PDS record itself is not mutated — pollution upstream stays
+ * upstream until the affected user re-saves through the validated form.
+ *
+ * Whether the inbound record contained ANY invalid tag is recorded on the
+ * `profiles.has_invalid_tags` flag. Browse and match queries exclude flagged
+ * profiles, so a polluted user is hidden until they re-save a clean record
+ * (which clears the flag automatically on the next upsert).
+ *
+ * `db` is optional — defaults to the process-wide singleton; pass an explicit
+ * handle to drive a test database in isolation.
+ */
 export function upsertProfile(
   did: string,
   record: NomareProfile,
-  handle?: string
+  handle?: string,
+  db: Database.Database = getDb()
 ) {
-  const db = getDb();
+  const inboundTags = record.tags ?? [];
+  const hasInvalidTags = inboundTags.some(
+    (t) => !isValidProfileTag(t).ok
+  )
+    ? 1
+    : 0;
+
   db.transaction(() => {
     db.prepare(
-      `INSERT INTO profiles (did, handle, display_name, bio, location, gender, pronouns, age, photos_json, created_at, indexed_at, raw_record)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?)
+      `INSERT INTO profiles (did, handle, display_name, bio, location, gender, pronouns, age, photos_json, created_at, indexed_at, raw_record, has_invalid_tags)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?, ?)
        ON CONFLICT(did) DO UPDATE SET
          handle=COALESCE(excluded.handle, profiles.handle),
          display_name=excluded.display_name, bio=excluded.bio, location=excluded.location,
          gender=excluded.gender, pronouns=excluded.pronouns, age=excluded.age,
          photos_json=excluded.photos_json, created_at=excluded.created_at,
-         indexed_at=datetime('now'), raw_record=excluded.raw_record`
+         indexed_at=datetime('now'), raw_record=excluded.raw_record,
+         has_invalid_tags=excluded.has_invalid_tags`
     ).run(
       did,
       handle ?? null,
@@ -45,15 +72,17 @@ export function upsertProfile(
       record.age ?? null,
       record.photos ? JSON.stringify(record.photos) : null,
       record.createdAt,
-      JSON.stringify(record)
+      JSON.stringify(record),
+      hasInvalidTags
     );
 
     db.prepare("DELETE FROM profile_tags WHERE did = ?").run(did);
     const insertTag = db.prepare(
       "INSERT INTO profile_tags (did, tag) VALUES (?, ?)"
     );
-    for (const tag of record.tags ?? []) {
-      insertTag.run(did, tag.toLowerCase());
+    for (const tag of inboundTags) {
+      if (!isValidProfileTag(tag).ok) continue;
+      insertTag.run(did, tag);
     }
 
     db.prepare("DELETE FROM profile_intentions WHERE did = ?").run(did);
@@ -90,8 +119,17 @@ export function deleteUserPreferences(
   db.prepare("DELETE FROM user_preferences WHERE did = ?").run(did);
 }
 
-export function updateHandle(did: string, handle: string) {
-  const db = getDb();
+/**
+ * Update the cached handle for a profile. No-op if the DID has no row yet.
+ *
+ * `db` is optional — defaults to the process-wide singleton; pass an explicit
+ * handle to drive the Jetstream subscriber's separate connection or a test DB.
+ */
+export function updateHandle(
+  did: string,
+  handle: string,
+  db: Database.Database = getDb()
+) {
   db.prepare("UPDATE profiles SET handle = ? WHERE did = ?").run(handle, did);
 }
 
@@ -103,15 +141,17 @@ interface BrowseParams {
   limit?: number;
 }
 
-export function browseProfiles(params: BrowseParams): {
+export function browseProfiles(
+  params: BrowseParams,
+  db: Database.Database = getDb()
+): {
   profiles: IndexedProfile[];
   total: number;
 } {
-  const db = getDb();
   const limit = Math.min(params.limit ?? 20, 50);
   const offset = ((params.page ?? 1) - 1) * limit;
 
-  const conditions: string[] = [];
+  const conditions: string[] = ["p.has_invalid_tags = 0"];
   const values: (string | number)[] = [];
 
   if (params.tag) {
@@ -375,10 +415,14 @@ export function setUserPreferences(
  * Pull every indexed profile (with tags and intentions attached) except the viewer.
  * Used as the candidate pool for match mode — filtering and scoring happens in src/lib/match.
  */
-export function getMatchCandidates(viewerDid: string): IndexedProfile[] {
-  const db = getDb();
+export function getMatchCandidates(
+  viewerDid: string,
+  db: Database.Database = getDb()
+): IndexedProfile[] {
   const rows = db
-    .prepare("SELECT * FROM profiles WHERE did != ?")
+    .prepare(
+      "SELECT * FROM profiles WHERE did != ? AND has_invalid_tags = 0"
+    )
     .all(viewerDid) as IndexedProfile[];
 
   const tagStmt = db.prepare("SELECT tag FROM profile_tags WHERE did = ?");
@@ -403,4 +447,37 @@ export function getProfileTags(did: string): string[] {
     .prepare("SELECT tag FROM profile_tags WHERE did = ?")
     .all(did) as { tag: string }[];
   return rows.map((r) => r.tag);
+}
+
+/**
+ * Pull the list of invalid tags currently sitting in this DID's PDS record.
+ *
+ * Reads `raw_record` (the verbatim JSON that came from the user's PDS at last
+ * Jetstream/index event) and runs each tag through `isValidProfileTag`. Used
+ * by the site-wide invalid-tags banner to name the offending tags so the user
+ * knows what to remove. Returns an empty array when the row is missing, when
+ * `raw_record` is null/malformed, or when every tag passes validation.
+ *
+ * `db` is optional — defaults to the process-wide singleton.
+ */
+export function getInvalidTagsForDid(
+  did: string,
+  db: Database.Database = getDb()
+): string[] {
+  const row = db
+    .prepare("SELECT raw_record FROM profiles WHERE did = ?")
+    .get(did) as { raw_record: string | null } | undefined;
+  if (!row?.raw_record) return [];
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(row.raw_record);
+  } catch {
+    return [];
+  }
+  if (!parsed || typeof parsed !== "object") return [];
+  const tags = (parsed as { tags?: unknown }).tags;
+  if (!Array.isArray(tags)) return [];
+  return tags.filter(
+    (t): t is string => typeof t === "string" && !isValidProfileTag(t).ok
+  );
 }

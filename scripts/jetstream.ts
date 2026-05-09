@@ -3,6 +3,11 @@ import Database from "better-sqlite3";
 import path from "path";
 import { initSchema } from "../src/lib/db/schema";
 import {
+  upsertProfile,
+  deleteProfile,
+  updateHandle,
+} from "../src/lib/db/queries";
+import {
   COLLECTION,
   LEGACY_COLLECTION,
   type NomareProfile,
@@ -30,64 +35,14 @@ let eventCount = 0;
 let reconnectDelay = 1000;
 let listManager: ListManager | null = null;
 
-// Prepared statements
-const upsertProfile = db.prepare(`
-  INSERT INTO profiles (did, handle, display_name, bio, location, gender, pronouns, age, photos_json, created_at, indexed_at, raw_record)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?)
-  ON CONFLICT(did) DO UPDATE SET
-    handle=COALESCE(excluded.handle, profiles.handle),
-    display_name=excluded.display_name, bio=excluded.bio, location=excluded.location,
-    gender=excluded.gender, pronouns=excluded.pronouns, age=excluded.age,
-    photos_json=excluded.photos_json, created_at=excluded.created_at,
-    indexed_at=datetime('now'), raw_record=excluded.raw_record
-`);
-const deleteTags = db.prepare("DELETE FROM profile_tags WHERE did = ?");
-const insertTag = db.prepare(
-  "INSERT INTO profile_tags (did, tag) VALUES (?, ?)"
-);
-const deleteIntentions = db.prepare(
-  "DELETE FROM profile_intentions WHERE did = ?"
-);
-const insertIntention = db.prepare(
-  "INSERT INTO profile_intentions (did, intention) VALUES (?, ?)"
-);
-const deleteProfileStmt = db.prepare("DELETE FROM profiles WHERE did = ?");
-const updateHandleStmt = db.prepare(
-  "UPDATE profiles SET handle = ? WHERE did = ?"
-);
+// Cursor management is jetstream-local — keeping it inline so the reconnect
+// loop and shutdown handler can read/write without funneling through the
+// queries.ts singleton (jetstream owns its own DB connection per process).
 const getCursorStmt = db.prepare(
   "SELECT cursor_us FROM cursor WHERE id = 1"
 );
 const saveCursorStmt = db.prepare(
   "INSERT OR REPLACE INTO cursor (id, cursor_us) VALUES (1, ?)"
-);
-
-const upsertTransaction = db.transaction(
-  (did: string, record: NomareProfile, handle?: string) => {
-    upsertProfile.run(
-      did,
-      handle ?? null,
-      record.displayName ?? null,
-      record.bio ?? null,
-      record.location ?? null,
-      record.gender ?? null,
-      record.pronouns ?? null,
-      record.age ?? null,
-      record.photos ? JSON.stringify(record.photos) : null,
-      record.createdAt,
-      JSON.stringify(record)
-    );
-
-    deleteTags.run(did);
-    for (const tag of record.tags ?? []) {
-      insertTag.run(did, tag.toLowerCase());
-    }
-
-    deleteIntentions.run(did);
-    for (const intention of record.intentions ?? []) {
-      insertIntention.run(did, intention);
-    }
-  }
 );
 
 interface JetstreamEvent {
@@ -129,7 +84,7 @@ async function handleEvent(event: JetstreamEvent) {
     if ((operation === "create" || operation === "update") && record) {
       const handle = await resolveHandle(did);
       console.log(`[${operation}] ${did} (${handle ?? "unknown handle"})`);
-      upsertTransaction(did, record, handle);
+      upsertProfile(did, record, handle, db);
 
       if (operation === "create" && listManager) {
         try {
@@ -141,7 +96,7 @@ async function handleEvent(event: JetstreamEvent) {
       }
     } else if (operation === "delete") {
       console.log(`[delete] ${did}`);
-      deleteProfileStmt.run(did);
+      deleteProfile(did, db);
 
       if (listManager) {
         try {
@@ -153,7 +108,7 @@ async function handleEvent(event: JetstreamEvent) {
       }
     }
   } else if (event.kind === "identity" && event.identity?.handle) {
-    updateHandleStmt.run(event.identity.handle, event.did);
+    updateHandle(event.did, event.identity.handle, db);
   }
 
   eventCount++;

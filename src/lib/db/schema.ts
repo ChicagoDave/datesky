@@ -1,5 +1,13 @@
 import type Database from "better-sqlite3";
 
+/**
+ * Idempotent: safe to call on every process start.
+ *
+ * `has_invalid_tags` is added defensively for databases created before the
+ * flag existed. SQLite has no `ADD COLUMN IF NOT EXISTS`, so we probe with
+ * pragma_table_info and ALTER only when missing. New databases get the column
+ * via the CREATE TABLE statement below.
+ */
 export function initSchema(db: Database.Database) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS profiles (
@@ -14,7 +22,8 @@ export function initSchema(db: Database.Database) {
       photos_json TEXT,
       created_at TEXT,
       indexed_at TEXT NOT NULL DEFAULT (datetime('now')),
-      raw_record TEXT
+      raw_record TEXT,
+      has_invalid_tags INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS profile_tags (
@@ -68,4 +77,13 @@ export function initSchema(db: Database.Database) {
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `);
+
+  const cols = db
+    .prepare("PRAGMA table_info(profiles)")
+    .all() as { name: string }[];
+  if (!cols.some((c) => c.name === "has_invalid_tags")) {
+    db.exec(
+      "ALTER TABLE profiles ADD COLUMN has_invalid_tags INTEGER NOT NULL DEFAULT 0"
+    );
+  }
 }
