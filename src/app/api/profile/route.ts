@@ -10,7 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAgent } from "@/lib/atproto/agent";
 import { getSession } from "@/lib/session";
 import { COLLECTION, LEGACY_COLLECTION, RKEY } from "@/lib/atproto/lexicon";
-import { isValidProfileTag } from "@/lib/profile/tag-validation";
+import { isValidProfileTag, normalizeTag } from "@/lib/profile/tag-validation";
 
 export const runtime = "nodejs";
 
@@ -76,19 +76,30 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    // Defense in depth — the TagInput component validates client-side, but a
-    // direct API caller (or a future Nomare client) must not be able to pollute
-    // the published record or the local tag index with URL-shaped strings.
+    // Defense in depth — the TagInput component normalizes + validates
+    // client-side, but a direct API caller (or a future Nomare client) must not
+    // be able to pollute the published record or the local tag index with
+    // URL-shaped strings. Normalize first (lowercase, internal spaces → '-',
+    // strip leading '#', collapse hyphens) so user-formatting noise is fixed
+    // silently; reject only what still fails the shape rule afterwards.
+    // Persist the normalized list so the PDS record is clean from this write
+    // forward.
     if (Array.isArray(record.tags)) {
       const invalid: { tag: unknown; reason: string }[] = [];
+      const accepted = new Set<string>();
       for (const tag of record.tags) {
-        const result =
-          typeof tag === "string"
-            ? isValidProfileTag(tag)
-            : { ok: false as const, reason: "tag must be a string" };
+        if (typeof tag !== "string") {
+          invalid.push({ tag, reason: "tag must be a string" });
+          continue;
+        }
+        const normalized = normalizeTag(tag);
+        if (!normalized) continue;
+        const result = isValidProfileTag(normalized);
         if (!result.ok) {
           invalid.push({ tag, reason: result.reason });
+          continue;
         }
+        accepted.add(normalized);
       }
       if (invalid.length > 0) {
         return NextResponse.json(
@@ -96,6 +107,7 @@ export async function PUT(req: NextRequest) {
           { status: 400 }
         );
       }
+      record.tags = Array.from(accepted);
     }
 
     if (!record.createdAt) {

@@ -18,6 +18,11 @@
  *      not leak invalid tags into the index (defense in depth).
  *   5. Profile fields and intentions persist normally regardless of tag filter.
  *   6. Empty/undefined tags array — no crash, no rows.
+ *   7-8. has_invalid_tags flag set/clear semantics.
+ *   9-10. browseProfiles / getMatchCandidates exclude flagged profiles.
+ *   11. getInvalidTagsForDid surfaces only post-normalize invalid tags.
+ *   12-14. recomputeInvalidTagFlag dry-run, apply, idempotency.
+ *   15. Spaces and casing in tags normalize away rather than flagging the user.
  */
 import Database from "better-sqlite3";
 import { initSchema } from "../src/lib/db/schema";
@@ -137,10 +142,12 @@ function makeRecord(overrides: Partial<NomareProfile> = {}): NomareProfile {
   console.log("\n2. All-invalid: profile persists, zero tag rows");
   const db = makeDb();
   const did = "did:plc:bob";
+  // All four are invalid even after normalization: URLs (slashes), `+`, and a
+  // dot are all rejected by `isValidProfileTag`.
   upsertProfile(
     did,
     makeRecord({
-      tags: ["https://bad.example", "WHITESPACE TAG", "C++", "node.js"],
+      tags: ["https://bad.example", "c++", "node.js", "foo/bar"],
     }),
     "bob.bsky.social",
     db
@@ -295,11 +302,14 @@ function makeRecord(overrides: Partial<NomareProfile> = {}): NomareProfile {
 
   upsertProfile(
     "did:plc:ivy",
-    makeRecord({ tags: ["dog parent", "WHITESPACE"] }),
+    makeRecord({ tags: ["foo/bar", "node.js"] }),
     "ivy.bsky.social",
     db
   );
-  assert(flagFor(db, "did:plc:ivy") === 1, "flag set when all tags invalid");
+  assert(
+    flagFor(db, "did:plc:ivy") === 1,
+    "flag set when all tags invalid even after normalize"
+  );
 
   upsertProfile(
     "did:plc:jules",
@@ -439,7 +449,8 @@ function makeRecord(overrides: Partial<NomareProfile> = {}): NomareProfile {
         "hiking",
         "https://bad.example.com",
         "polyam",
-        "dog parent",
+        "dog parent", // normalizes to "dog-parent" — NOT reported as invalid
+        "node.js", // dot — still invalid post-normalize
       ],
     }),
     "rosa.bsky.social",
@@ -448,8 +459,12 @@ function makeRecord(overrides: Partial<NomareProfile> = {}): NomareProfile {
   const bad = getInvalidTagsForDid("did:plc:rosa", db);
   assert(
     JSON.stringify(bad.sort()) ===
-      JSON.stringify(["dog parent", "https://bad.example.com"]),
-    `returns only invalid entries (got ${JSON.stringify(bad)})`
+      JSON.stringify(["https://bad.example.com", "node.js"]),
+    `returns only post-normalize invalid entries (got ${JSON.stringify(bad)})`
+  );
+  assert(
+    !bad.includes("dog parent"),
+    "space-containing tag is NOT reported as invalid (it normalizes)"
   );
 
   // Clean profile returns empty.
@@ -462,6 +477,19 @@ function makeRecord(overrides: Partial<NomareProfile> = {}): NomareProfile {
   assert(
     getInvalidTagsForDid("did:plc:sam", db).length === 0,
     "clean profile returns empty array"
+  );
+
+  // Profile whose only "issue" is space-containing tags returns empty —
+  // because they normalize to valid hyphenated forms.
+  upsertProfile(
+    "did:plc:spaceonly",
+    makeRecord({ tags: ["dog parent", "data science", "Hiking"] }),
+    "spaceonly.bsky.social",
+    db
+  );
+  assert(
+    getInvalidTagsForDid("did:plc:spaceonly", db).length === 0,
+    "space/case-only tags return empty (not reported as invalid)"
   );
 
   // Unknown DID returns empty.
@@ -582,6 +610,97 @@ function makeRecord(overrides: Partial<NomareProfile> = {}): NomareProfile {
   assert(r2.scanned === 1, "second apply scans 1");
   assert(r2.mismatches.length === 0, "second apply finds zero mismatches");
   assert(r2.updated === 0, "second apply writes zero rows");
+  db.close();
+}
+
+// 15. Spaces and casing in tags normalize away — never flag, never filter
+{
+  console.log(
+    "\n15. Spaces/casing normalize: stored as hyphenated, no flag set"
+  );
+  const db = makeDb();
+  const did = "did:plc:nori";
+  upsertProfile(
+    did,
+    makeRecord({
+      tags: [
+        "Dog Parent", // -> dog-parent
+        "data science", // -> data-science
+        "  hiking  ", // -> hiking
+        "#polyam", // -> polyam
+        "data   science", // -> data-science (dedup with above)
+      ],
+    }),
+    "nori.bsky.social",
+    db
+  );
+  assert(
+    flagFor(db, did) === 0,
+    "flag stays 0 — spaces and casing are not pollution"
+  );
+  assert(
+    JSON.stringify(tagsFor(db, did)) ===
+      JSON.stringify(["data-science", "dog-parent", "hiking", "polyam"]),
+    `normalized tags persisted as hyphenated (got ${JSON.stringify(tagsFor(db, did))})`
+  );
+
+  // The same DID also appears in browse — not hidden by the flag.
+  const browse = browseProfiles({}, db);
+  assert(
+    browse.profiles.some((p) => p.did === did),
+    "normalize-only profile shows in browse (no flag set)"
+  );
+
+  // Mixed — one URL still flags the row, but the spaceful tags still
+  // normalize and persist alongside the rejected URL.
+  const did2 = "did:plc:opal";
+  upsertProfile(
+    did2,
+    makeRecord({
+      tags: ["Dog Parent", "https://bad.example.com", "data science"],
+    }),
+    "opal.bsky.social",
+    db
+  );
+  assert(flagFor(db, did2) === 1, "URL alongside spaces still flags the row");
+  assert(
+    JSON.stringify(tagsFor(db, did2)) ===
+      JSON.stringify(["data-science", "dog-parent"]),
+    `normalized spaces persisted; URL dropped (got ${JSON.stringify(tagsFor(db, did2))})`
+  );
+  db.close();
+}
+
+// 16. recomputeInvalidTagFlag: a profile flagged purely for space-only "pollution"
+//     gets unflagged after recompute, since the new rules don't treat spaces as
+//     pollution.
+{
+  console.log(
+    "\n16. recomputeInvalidTagFlag clears the flag for space-only legacy rows"
+  );
+  const db = makeDb();
+  const did = "did:plc:perla";
+  // Simulate a legacy upsert where the indexer (under old rules) had set the
+  // flag because of a space-containing tag. We write the row directly to mimic
+  // the legacy state — `upsertProfile` under the new rules would no longer
+  // produce flag=1 for this input.
+  upsertProfile(
+    did,
+    makeRecord({ tags: ["dog parent", "hiking"] }),
+    "perla.bsky.social",
+    db
+  );
+  // Force the flag to 1 to simulate the legacy state.
+  db.prepare("UPDATE profiles SET has_invalid_tags = 1 WHERE did = ?").run(did);
+  assert(flagFor(db, did) === 1, "pre: flag forced to 1 (legacy state)");
+
+  const result = recomputeInvalidTagFlag(db, { apply: true });
+  assert(result.scanned === 1, "scanned 1");
+  assert(result.updated === 1, "updated 1");
+  assert(
+    flagFor(db, did) === 0,
+    "flag cleared — spaces are not pollution under new rules"
+  );
   db.close();
 }
 

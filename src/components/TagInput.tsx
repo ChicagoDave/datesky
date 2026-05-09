@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { isValidProfileTag } from "@/lib/profile/tag-validation";
+import { isValidProfileTag, normalizeTag } from "@/lib/profile/tag-validation";
 
 interface TagInputProps {
   tags: string[];
@@ -14,7 +14,7 @@ export default function TagInput({ tags, onChange, max = 32 }: TagInputProps) {
   const [error, setError] = useState<string | null>(null);
 
   function addTag(value: string) {
-    const tag = value.trim().toLowerCase().replace(/^#/, "");
+    const tag = normalizeTag(value);
     if (!tag) {
       setError(null);
       return;

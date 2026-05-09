@@ -1,7 +1,7 @@
 import type Database from "better-sqlite3";
 import { getDb } from "./index";
 import type { NomareProfile } from "../atproto/lexicon";
-import { isValidProfileTag } from "../profile/tag-validation";
+import { isValidProfileTag, normalizeTag } from "../profile/tag-validation";
 
 export interface IndexedProfile {
   did: string;
@@ -22,17 +22,21 @@ export interface IndexedProfile {
 /**
  * Upsert a profile and its tag/intention sets into the local index.
  *
- * Tags are filtered through `isValidProfileTag` before insertion: tags that
- * fail the shape rule (URLs, whitespace, uppercase, dots, slashes, etc.) are
- * silently dropped. This is defense in depth at the indexer boundary so a
- * Jetstream replay cannot re-pollute `profile_tags` after an operator-run
- * cleanup. The PDS record itself is not mutated — pollution upstream stays
- * upstream until the affected user re-saves through the validated form.
+ * Tags are normalized through `normalizeTag` (lowercase, internal spaces become
+ * hyphens, leading `#` stripped, adjacent hyphens collapsed) and then filtered
+ * through `isValidProfileTag`. Tags that still fail the shape rule after
+ * normalization (URLs, dots, slashes, etc.) are silently dropped. This is
+ * defense in depth at the indexer boundary so a Jetstream replay cannot
+ * re-pollute `profile_tags` after an operator-run cleanup. The PDS record
+ * itself is not mutated — true pollution upstream stays upstream until the
+ * affected user re-saves through the validated form.
  *
- * Whether the inbound record contained ANY invalid tag is recorded on the
+ * Whether the inbound record contained any tag that is non-string or that
+ * fails validation AFTER normalization is recorded on the
  * `profiles.has_invalid_tags` flag. Browse and match queries exclude flagged
  * profiles, so a polluted user is hidden until they re-save a clean record
- * (which clears the flag automatically on the next upsert).
+ * (which clears the flag automatically on the next upsert). Whitespace and
+ * casing are not pollution — they normalize away and never set the flag.
  *
  * `db` is optional — defaults to the process-wide singleton; pass an explicit
  * handle to drive a test database in isolation.
@@ -44,11 +48,20 @@ export function upsertProfile(
   db: Database.Database = getDb()
 ) {
   const inboundTags = record.tags ?? [];
-  const hasInvalidTags = inboundTags.some(
-    (t) => !isValidProfileTag(t).ok
-  )
-    ? 1
-    : 0;
+  let hasInvalidTags = 0;
+  const acceptedTags = new Set<string>();
+  for (const tag of inboundTags) {
+    if (typeof tag !== "string") {
+      hasInvalidTags = 1;
+      continue;
+    }
+    const normalized = normalizeTag(tag);
+    if (!isValidProfileTag(normalized).ok) {
+      hasInvalidTags = 1;
+      continue;
+    }
+    acceptedTags.add(normalized);
+  }
 
   db.transaction(() => {
     db.prepare(
@@ -80,8 +93,7 @@ export function upsertProfile(
     const insertTag = db.prepare(
       "INSERT INTO profile_tags (did, tag) VALUES (?, ?)"
     );
-    for (const tag of inboundTags) {
-      if (!isValidProfileTag(tag).ok) continue;
+    for (const tag of acceptedTags) {
       insertTag.run(did, tag);
     }
 
@@ -453,10 +465,15 @@ export function getProfileTags(did: string): string[] {
  * Pull the list of invalid tags currently sitting in this DID's PDS record.
  *
  * Reads `raw_record` (the verbatim JSON that came from the user's PDS at last
- * Jetstream/index event) and runs each tag through `isValidProfileTag`. Used
- * by the site-wide invalid-tags banner to name the offending tags so the user
- * knows what to remove. Returns an empty array when the row is missing, when
- * `raw_record` is null/malformed, or when every tag passes validation.
+ * Jetstream/index event), normalizes each tag through `normalizeTag`, and
+ * reports the original (un-normalized) value of any tag that still fails
+ * `isValidProfileTag` after normalization. Used by the site-wide invalid-tags
+ * banner to name the offending tags so the user knows what to remove. Tags
+ * that only differ by whitespace or casing are NOT reported — they will be
+ * normalized away on the next save and were never pollution to begin with.
+ *
+ * Returns an empty array when the row is missing, when `raw_record` is
+ * null/malformed, or when every tag passes validation after normalization.
  *
  * `db` is optional — defaults to the process-wide singleton.
  */
@@ -478,6 +495,7 @@ export function getInvalidTagsForDid(
   const tags = (parsed as { tags?: unknown }).tags;
   if (!Array.isArray(tags)) return [];
   return tags.filter(
-    (t): t is string => typeof t === "string" && !isValidProfileTag(t).ok
+    (t): t is string =>
+      typeof t === "string" && !isValidProfileTag(normalizeTag(t)).ok
   );
 }

@@ -8,7 +8,7 @@
  * Owner context: Profile bounded context — operational tooling.
  */
 import type Database from "better-sqlite3";
-import { isValidProfileTag } from "./tag-validation";
+import { isValidProfileTag, normalizeTag } from "./tag-validation";
 
 export interface FlagMismatch {
   did: string;
@@ -81,7 +81,9 @@ export function recomputeInvalidTagFlag(
 /**
  * Compute the flag for a single raw_record JSON string. Returns 0 when the
  * record is missing, malformed, or has no `tags` array, or when every tag
- * passes validation. Returns 1 if any tag is non-string or fails the rule.
+ * passes validation after normalization. Returns 1 if any tag is non-string
+ * or still fails the rule once normalized — whitespace and casing are not
+ * pollution, they normalize away.
  */
 function computeFlagFromRaw(raw: string | null): number {
   if (!raw) return 0;
@@ -95,7 +97,7 @@ function computeFlagFromRaw(raw: string | null): number {
   const tags = (parsed as { tags?: unknown }).tags;
   if (!Array.isArray(tags)) return 0;
   return tags.some(
-    (t) => typeof t !== "string" || !isValidProfileTag(t).ok
+    (t) => typeof t !== "string" || !isValidProfileTag(normalizeTag(t)).ok
   )
     ? 1
     : 0;
